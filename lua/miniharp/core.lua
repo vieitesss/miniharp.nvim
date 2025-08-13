@@ -89,9 +89,6 @@ function M.prev()
     jump_to(i)
 end
 
----Jump to mark N (1-based).
-function M.go(n) jump_to(n) end
-
 ---@return MiniharpMark[]
 function M.list() return vim.deepcopy(state.marks) end
 
