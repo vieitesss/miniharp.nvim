@@ -1,13 +1,15 @@
 ---@class Miniharp
-local M     = {}
+local M = {}
 
 local state = require('miniharp.state')
-local util  = require('miniharp.util')
+local util = require('miniharp.util')
 local core = require('miniharp.core')
 
 local function ensure_autosave()
     if state.augroup then return end
+
     state.augroup = vim.api.nvim_create_augroup('Miniharp', { clear = true })
+
     vim.api.nvim_create_autocmd('BufLeave', {
         group = state.augroup,
         callback = function(args)
@@ -23,7 +25,9 @@ end
 ---@param opts? { autosave?: boolean }
 function M.setup(opts)
     opts = opts or {}
+
     local autosave = opts.autosave; if autosave == nil then autosave = true end
+
     if autosave then ensure_autosave() end
 end
 
