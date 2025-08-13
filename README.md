@@ -1,4 +1,4 @@
-# miniharp
+# miniharp.nvim
 
 > Minimal Harpoon-like plugin for Neovim. Session-only, zero deps, tiny API.
 
@@ -11,11 +11,9 @@ Inspired by (and giving full credit to) **Harpoon** by [ThePrimeagen](https://gi
 - **Jump next/prev** through marked files from anywhere.
 - **Session-only** by design (simple and fast). No external deps.
 
-## Install
+## Installation
 
-### With a plugin manager (local path)
-
-**lazy.nvim** example:
+### lazy.nvim
 
 ```lua
 {
@@ -24,7 +22,7 @@ Inspired by (and giving full credit to) **Harpoon** by [ThePrimeagen](https://gi
 }
 ```
 
-**vim.pack** example:
+### vim.pack
 
 ```lua
 vim.pack.add({
