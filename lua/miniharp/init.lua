@@ -21,6 +21,9 @@ local function ensure_autosave()
     })
 end
 
+-- Re-export public API
+M = vim.tbl_extend("keep", {}, core)
+
 ---Setup miniharp.
 ---@param opts? { autosave?: boolean }
 function M.setup(opts)
@@ -30,8 +33,5 @@ function M.setup(opts)
 
     if autosave then ensure_autosave() end
 end
-
--- Re-export public API
-M = vim.tbl_extend("keep", {}, core)
 
 return M
