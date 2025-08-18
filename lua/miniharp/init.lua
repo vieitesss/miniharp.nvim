@@ -42,6 +42,8 @@ function M.save()
     local ok, err = storage.save()
     if not ok then
         vim.notify('miniharp: ' .. (err or 'unknown error'), vim.log.levels.ERROR)
+    else
+        vim.notify('miniharp: saved marks for ' .. utils.pretty(vim.fn.getcwd()), vim.log.levels.INFO)
     end
 end
 
@@ -50,6 +52,8 @@ function M.restore()
     local ok, err = storage.load()
     if not ok then
         vim.notify('miniharp: ' .. (err or 'unknown error'), vim.log.levels.ERROR)
+    else
+        vim.notify('miniharp: restored marks for ' .. utils.pretty(vim.fn.getcwd()), vim.log.levels.INFO)
     end
 end
 
