@@ -1,15 +1,20 @@
 ---@class Miniharp
-local M = {}
+local M       = {}
 
-local state = require('miniharp.state')
-local utils = require('miniharp.utils')
-local core = require('miniharp.core')
+local state   = require('miniharp.state')
+local utils   = require('miniharp.utils')
+local core    = require('miniharp.core')
+local storage = require('miniharp.storage')
 
-local function ensure_autosave()
+-- Create (or reuse) the plugin augroup
+local function ensure_group()
     if state.augroup then return end
-
     state.augroup = vim.api.nvim_create_augroup('Miniharp', { clear = true })
+end
 
+-- Track last cursor pos for marked files when leaving a buffer
+local function ensure_autosave_positions()
+    ensure_group()
     vim.api.nvim_create_autocmd('BufLeave', {
         group = state.augroup,
         callback = function(args)
@@ -21,17 +26,46 @@ local function ensure_autosave()
     })
 end
 
--- Re-export public API
+local function ensure_persist_autosave()
+    ensure_group()
+    vim.api.nvim_create_autocmd('VimLeavePre', {
+        group = state.augroup,
+        callback = function() storage.save() end,
+        desc = 'miniharp: save marks session for cwd',
+    })
+end
+
 M = vim.tbl_extend("keep", {}, core)
 
+---Persist current state for the working directory.
+---@return boolean ok, string? err
+function M.save() return storage.save() end
+
+---Restore state for the working directory (if present).
+---@return boolean ok, string? err
+function M.restore() return storage.load() end
+
+---@class MiniharpOpts
+---@field autoload? boolean  @Load saved marks for this cwd on startup (default: false)
+---@field autosave? boolean  @Save marks for this cwd on exit (default: false)
+
 ---Setup miniharp.
----@param opts? { autosave?: boolean }
+---@param opts? MiniharpOpts
 function M.setup(opts)
     opts = opts or {}
 
-    local autosave = opts.autosave; if autosave == nil then autosave = true end
+    ensure_autosave_positions()
 
-    if autosave then ensure_autosave() end
+    local autoload = opts.autoload == true
+    local autosave = opts.autosave == true
+
+    if autoload then
+        storage.load()
+    end
+
+    if autosave then
+        ensure_persist_autosave()
+    end
 end
 
 return M
