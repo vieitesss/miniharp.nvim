@@ -33,19 +33,6 @@ local function session_path(cwd)
     return dir .. '/session-' .. key .. '.json'
 end
 
-local function json_encode(tbl)
-    if vim.json and vim.json.encode then
-        return vim.json.encode(tbl)
-    end
-    return vim.fn.json_encode(tbl)
-end
-
-local function json_decode(str)
-    if vim.json and vim.json.decode then
-        return vim.json.decode(str)
-    end
-    return vim.fn.json_decode(str)
-end
 
 ---Save current marks for the cwd into stdpath('state'|'data')/miniharp/sessions.
 ---@param cwd? string
@@ -58,7 +45,7 @@ function M.save(cwd)
         marks = state.marks or {},
     }
 
-    local ok, json = pcall(json_encode, payload)
+    local ok, json = pcall(utils.json_encode, payload)
     if not ok then return false, 'miniharp: JSON encode failed' end
 
     local lines = vim.split(json, '\n', { plain = true })
@@ -82,7 +69,7 @@ function M.load(cwd)
     end)
     if not ok_read then return false, 'miniharp: read failed' end
 
-    local ok_json, data = pcall(json_decode, content)
+    local ok_json, data = pcall(utils.json_decode, content)
     if not ok_json or type(data) ~= 'table' then
         return false, 'miniharp: JSON decode failed'
     end
