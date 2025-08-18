@@ -101,7 +101,7 @@ function M.load(cwd)
     end
 
     state.marks = restored
-    state.idx   = math.min(tonumber(data.idx or 0) or 0, #state.marks)
+    state.idx = math.min(tonumber(data.idx or 0) or 0, #state.marks)
 
     return true
 end

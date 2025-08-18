@@ -1,9 +1,9 @@
 ---@class Miniharp
-local M       = {}
+local M = {}
 
-local state   = require('miniharp.state')
-local utils   = require('miniharp.utils')
-local core    = require('miniharp.core')
+local state = require('miniharp.state')
+local utils = require('miniharp.utils')
+local core = require('miniharp.core')
 local storage = require('miniharp.storage')
 
 -- Create (or reuse) the plugin augroup
@@ -38,12 +38,20 @@ end
 M = vim.tbl_extend("keep", {}, core)
 
 ---Persist current state for the working directory.
----@return boolean ok, string? err
-function M.save() return storage.save() end
+function M.save()
+    local ok, err = storage.save()
+    if not ok then
+        vim.notify('miniharp: ' .. (err or 'unknown error'), vim.log.levels.ERROR)
+    end
+end
 
 ---Restore state for the working directory (if present).
----@return boolean ok, string? err
-function M.restore() return storage.load() end
+function M.restore()
+    local ok, err = storage.load()
+    if not ok then
+        vim.notify('miniharp: ' .. (err or 'unknown error'), vim.log.levels.ERROR)
+    end
+end
 
 ---@class MiniharpOpts
 ---@field autoload? boolean  @Load saved marks for this cwd on startup (default: false)
