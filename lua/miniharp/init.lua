@@ -71,8 +71,8 @@ function M.setup(opts)
 
     ensure_autosave_positions()
 
-    local autoload = opts.autoload == true
-    local autosave = opts.autosave == true
+    local autoload = opts.autoload ~= false
+    local autosave = opts.autosave ~= false
 
     if autoload then
         storage.load()
