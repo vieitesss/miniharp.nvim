@@ -40,6 +40,7 @@ M = vim.tbl_extend("keep", {}, core)
 ---Persist current state for the working directory.
 function M.save()
     local ok, err = storage.save()
+    vim.print(ok)
     if not ok then
         vim.notify('miniharp: ' .. (err or 'unknown error'), vim.log.levels.ERROR)
     else
@@ -50,6 +51,8 @@ end
 ---Restore state for the working directory (if present).
 function M.restore()
     local ok, err = storage.load()
+
+    vim.print(ok)
     if not ok then
         vim.notify('miniharp: ' .. (err or 'unknown error'), vim.log.levels.ERROR)
     else
