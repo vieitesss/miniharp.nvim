@@ -77,7 +77,11 @@ function M.load(cwd)
     local restored = {}
     if type(data.marks) == 'table' then
         for _, m in ipairs(data.marks) do
-            if m and m.file and m.lnum and m.col then
+            if m
+                and type(m.file) == 'string'
+                and tonumber(m.lnum)
+                and tonumber(m.col)
+            then
                 table.insert(restored, {
                     file = utils.norm(m.file),
                     lnum = tonumber(m.lnum) or 1,
