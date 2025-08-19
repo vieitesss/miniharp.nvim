@@ -21,9 +21,13 @@ local function session_path(cwd)
     local norm_cwd = utils.norm(cwd)
 
     local key
-    local ok = pcall(function() return vim.fn.sha256 ~= nil end)
-    if ok then
-        key = vim.fn.sha256(norm_cwd)
+    if type(vim.fn.sha256) == "function" then
+        local ok, result = pcall(vim.fn.sha256, norm_cwd)
+        if ok and type(result) == "string" and result ~= "" then
+            key = result
+        else
+            key = norm_cwd:gsub('[^%w]+', '_')
+        end
     else
         key = norm_cwd:gsub('[^%w]+', '_')
     end

@@ -59,6 +59,7 @@ end
 ---@class MiniharpOpts
 ---@field autoload? boolean  @Load saved marks for this cwd on startup (default: true)
 ---@field autosave? boolean  @Save marks for this cwd on exit (default: true)
+---@field show_on_autoload? boolean  @Show the marks list UI after a successful autoload (default: false)
 
 ---Setup miniharp.
 ---@param opts? MiniharpOpts
@@ -69,10 +70,13 @@ function M.setup(opts)
 
     local autoload = opts.autoload ~= false
     local autosave = opts.autosave ~= false
+    local show_ui = opts.show_on_autoload or false
 
     if autoload then
-        local ok = storage.load()
-        if ok and #state.marks > 0 then
+        local ok, err = storage.load()
+        if not ok then
+            vim.notify('miniharp: ' .. (err or 'unknown error'), vim.log.levels.ERROR)
+        elseif #state.marks > 0 and show_ui then
             vim.schedule(function() ui.open() end)
         end
     end
