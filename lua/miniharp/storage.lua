@@ -21,13 +21,9 @@ local function session_path(cwd)
     local norm_cwd = utils.norm(cwd)
 
     local key
-    if type(vim.fn.sha256) == "function" then
-        local ok, result = pcall(vim.fn.sha256, norm_cwd)
-        if ok and type(result) == "string" and result ~= "" then
-            key = result
-        else
-            key = norm_cwd:gsub('[^%w]+', '_')
-        end
+    local ok, result = pcall(vim.fn.sha256, norm_cwd)
+    if ok and type(result) == "string" and result ~= "" then
+        key = result
     else
         key = norm_cwd:gsub('[^%w]+', '_')
     end
@@ -92,7 +88,12 @@ function M.load(cwd)
     end
 
     state.marks = restored
-    state.idx = math.min(tonumber(data.idx or 0) or 0, #state.marks)
+
+    if #state.marks == 0 then
+        state.idx = math.max(1, math.min(tonumber(data.idx or 1) or 1, #state.marks))
+    else
+        state.idx = 0
+    end
 
     return true
 end

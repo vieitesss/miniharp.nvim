@@ -75,7 +75,11 @@ function M.setup(opts)
     if autoload then
         local ok, err = storage.load()
         if not ok then
-            vim.notify('miniharp: ' .. (err or 'unknown error'), vim.log.levels.ERROR)
+            if err and string.find(err, 'no session file for cwd') then
+                vim.notify('miniharp: ' .. err, vim.log.levels.INFO)
+            else
+                vim.notify('miniharp: ' .. (err or 'unknown error'), vim.log.levels.WARN)
+            end
         elseif #state.marks > 0 and show_ui then
             vim.schedule(function() ui.open() end)
         end
