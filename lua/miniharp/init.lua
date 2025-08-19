@@ -54,8 +54,8 @@ function M.restore()
 end
 
 ---@class MiniharpOpts
----@field autoload? boolean  @Load saved marks for this cwd on startup (default: false)
----@field autosave? boolean  @Save marks for this cwd on exit (default: false)
+---@field autoload? boolean  @Load saved marks for this cwd on startup (default: true)
+---@field autosave? boolean  @Save marks for this cwd on exit (default: true)
 
 ---Setup miniharp.
 ---@param opts? MiniharpOpts

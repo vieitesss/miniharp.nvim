@@ -22,7 +22,7 @@ local function session_path(cwd)
 
     local key
     local ok = pcall(function() return vim.fn.sha256 ~= nil end)
-    if ok and vim.fn.sha256 ~= nil then
+    if ok then
         key = vim.fn.sha256(norm_cwd)
     else
         key = norm_cwd:gsub('[^%w]+', '_')
