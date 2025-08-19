@@ -5,6 +5,7 @@ local state = require('miniharp.state')
 local utils = require('miniharp.utils')
 local core = require('miniharp.core')
 local storage = require('miniharp.storage')
+local ui = require('miniharp.ui')
 
 -- Create (or reuse) the plugin augroup
 local function ensure_group()
@@ -37,6 +38,8 @@ end
 
 M = vim.tbl_extend("keep", {}, core)
 
+function M.show_list() ui.open() end
+
 ---Persist current state for the working directory.
 function M.save()
     local ok, err = storage.save()
@@ -68,7 +71,10 @@ function M.setup(opts)
     local autosave = opts.autosave ~= false
 
     if autoload then
-        storage.load()
+        local ok = storage.load()
+        if ok and #state.marks > 0 then
+            vim.schedule(function() ui.open() end)
+        end
     end
 
     if autosave then
