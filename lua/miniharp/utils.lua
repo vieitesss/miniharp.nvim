@@ -21,5 +21,18 @@ end
 
 function M.pretty(path) return vim.fn.fnamemodify(path, ':~:.') end
 
-return M
+function M.json_encode(tbl)
+    if vim.json and vim.json.encode then
+        return vim.json.encode(tbl)
+    end
+    return vim.fn.json_encode(tbl)
+end
 
+function M.json_decode(str)
+    if vim.json and vim.json.decode then
+        return vim.json.decode(str)
+    end
+    return vim.fn.json_decode(str)
+end
+
+return M

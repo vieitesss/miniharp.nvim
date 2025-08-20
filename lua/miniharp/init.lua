@@ -4,12 +4,18 @@ local M = {}
 local state = require('miniharp.state')
 local utils = require('miniharp.utils')
 local core = require('miniharp.core')
+local storage = require('miniharp.storage')
+local ui = require('miniharp.ui')
 
-local function ensure_autosave()
+-- Create (or reuse) the plugin augroup
+local function ensure_group()
     if state.augroup then return end
-
     state.augroup = vim.api.nvim_create_augroup('Miniharp', { clear = true })
+end
 
+-- Track last cursor pos for marked files when leaving a buffer
+local function ensure_autosave_positions()
+    ensure_group()
     vim.api.nvim_create_autocmd('BufLeave', {
         group = state.augroup,
         callback = function(args)
@@ -21,17 +27,67 @@ local function ensure_autosave()
     })
 end
 
--- Re-export public API
+local function ensure_persist_autosave()
+    ensure_group()
+    vim.api.nvim_create_autocmd('VimLeavePre', {
+        group = state.augroup,
+        callback = function() storage.save() end,
+        desc = 'miniharp: save marks session for cwd',
+    })
+end
+
 M = vim.tbl_extend("keep", {}, core)
 
+function M.show_list() ui.open() end
+
+---Persist current state for the working directory.
+function M.save()
+    local ok, err = storage.save()
+    if not ok then
+        vim.notify('miniharp: ' .. (err or 'unknown error'), vim.log.levels.ERROR)
+    end
+end
+
+---Restore state for the working directory (if present).
+function M.restore()
+    local ok, err = storage.load()
+    if not ok then
+        vim.notify('miniharp: ' .. (err or 'unknown error'), vim.log.levels.ERROR)
+    end
+end
+
+---@class MiniharpOpts
+---@field autoload? boolean  @Load saved marks for this cwd on startup (default: true)
+---@field autosave? boolean  @Save marks for this cwd on exit (default: true)
+---@field show_on_autoload? boolean  @Show the marks list UI after a successful autoload (default: false)
+
 ---Setup miniharp.
----@param opts? { autosave?: boolean }
+---@param opts? MiniharpOpts
 function M.setup(opts)
     opts = opts or {}
 
-    local autosave = opts.autosave; if autosave == nil then autosave = true end
+    ensure_autosave_positions()
 
-    if autosave then ensure_autosave() end
+    local autoload = opts.autoload ~= false
+    local autosave = opts.autosave ~= false
+    local show_ui = opts.show_on_autoload or false
+
+    if autoload then
+        local ok, err = storage.load()
+        if not ok then
+            if err and string.find(err, 'no session file for cwd') then
+                vim.notify('miniharp: ' .. err, vim.log.levels.INFO)
+            else
+                vim.notify('miniharp: ' .. (err or 'unknown error'), vim.log.levels.WARN)
+            end
+        elseif #state.marks > 0 and show_ui then
+            vim.schedule(function() ui.open() end)
+        end
+    end
+
+    if autosave then
+        ensure_persist_autosave()
+    end
 end
 
 return M
