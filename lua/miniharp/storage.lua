@@ -93,7 +93,7 @@ function M.load(cwd)
 
     state.marks = restored
 
-    if #state.marks == 0 then
+    if #state.marks > 0 then
         state.idx = math.max(1, math.min(tonumber(data.idx or 1) or 1, #state.marks))
     else
         state.idx = 0
