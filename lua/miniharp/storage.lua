@@ -40,8 +40,7 @@ end
 function M.save(cwd)
     local path = session_path(cwd)
     local payload = {
-        version = 1,
-        idx = state.idx or 0,
+        version = 2,
         marks = state.marks or {},
     }
 
@@ -92,12 +91,7 @@ function M.load(cwd)
     end
 
     state.marks = restored
-
-    if #state.marks > 0 then
-        state.idx = math.max(1, math.min(tonumber(data.idx or 1) or 1, #state.marks))
-    else
-        state.idx = 0
-    end
+    state.idx = 0
 
     return true
 end
