@@ -109,7 +109,8 @@ end
 function M.list() return vim.deepcopy(state.marks) end
 
 function M.clear()
-    state.marks = {}; state.idx = 0
+    state.marks = {}
+    state.idx = 0
 end
 
 return M

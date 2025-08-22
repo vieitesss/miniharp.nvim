@@ -5,11 +5,12 @@
 
 ---@class MiniharpState
 ---@field marks MiniharpMark[]
+---@field cwd string
 ---@field idx integer
 ---@field augroup? integer
 
 local M ---@type MiniharpState
 
-M = { marks = {}, idx = 0, augroup = nil }
+M = { marks = {}, cwd = vim.fn.cwd(), idx = 0, augroup = nil }
 
 return M

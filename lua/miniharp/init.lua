@@ -36,6 +36,53 @@ local function ensure_persist_autosave()
     })
 end
 
+local function ensure_dirchange(opts)
+    ensure_group()
+    state.cwd = state.cwd or utils.norm(vim.fn.getcwd())
+
+    vim.api.nvim_create_autocmd('DirChanged', {
+        group = state.augroup,
+        callback = function(ev)
+            local new_cwd = utils.norm((ev and ev.cwd) or vim.fn.getcwd())
+            local old_cwd = state.cwd or new_cwd
+            if old_cwd == new_cwd then return end
+
+            if opts.autosave ~= false and #state.marks > 0 then
+                local ok, err = storage.save()
+                if not ok then
+                    vim.notify(
+                        ('miniharp: save failed for %s - %s')
+                        :format(vim.fn.fnamemodify(old_cwd, ':~:.'), err or 'unknown error'),
+                        vim.log.levels.WARN)
+                end
+            end
+
+            core.clear()
+
+            if opts.autoload then
+                local ok, err = storage.load()
+                if not ok then
+                    if err and string.find(err, 'no session file for cwd') then
+                        vim.notify('miniharp: ' .. err, vim.log.levels.INFO)
+                    else
+                        vim.notify('miniharp: ' .. (err or 'unknown error'), vim.log.levels.WARN)
+                    end
+                end
+            end
+
+            local formatted_new = vim.fn.fnamemodify(new_cwd, ':~:.')
+            local msg = (#state.marks > 0)
+                and ('Restored %d mark(s) for %s'):format(#state.marks, formatted_new)
+                or ('No saved marks for %s'):format(formatted_new)
+
+            vim.schedule(function() ui.open(msg) end)
+
+            state.cwd = new_cwd
+        end,
+        desc = 'miniharp: handle marks on DirChanged',
+    })
+end
+
 M = vim.tbl_extend("keep", {}, core)
 
 function M.show_list() ui.open() end
@@ -88,6 +135,8 @@ function M.setup(opts)
     if autosave then
         ensure_persist_autosave()
     end
+
+    ensure_dirchange({ autoload = autoload, autosave = autosave })
 end
 
 return M
