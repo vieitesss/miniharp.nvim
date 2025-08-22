@@ -11,6 +11,6 @@
 
 local M ---@type MiniharpState
 
-M = { marks = {}, cwd = vim.fn.cwd(), idx = 0, augroup = nil }
+M = { marks = {}, cwd = vim.fn.getcwd(), idx = 0, augroup = nil }
 
 return M
