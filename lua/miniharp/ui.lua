@@ -19,26 +19,31 @@ local function close()
     vim.on_key(nil, ns)
 end
 
-local function build_lines()
+---@param msg string|nil
+local function build_lines(msg)
     local lines = { 'Miniharp marks' }
-    for i, m in ipairs(state.marks) do
-        local rel = vim.fn.fnamemodify(m.file, ':.')
-        lines[#lines + 1] = string.format(' %d. %s', i, rel)
+    if msg and msg ~= '' then
+        lines[#lines + 1] = ' ' .. msg
+    end
+    if #state.marks == 0 then
+        lines[#lines + 1] = ' (no marks)'
+    else
+        for i, m in ipairs(state.marks) do
+            local rel = vim.fn.fnamemodify(m.file, ':.')
+            lines[#lines + 1] = string.format(' %d. %s', i, rel)
+        end
     end
 
     return lines
 end
 
 ---Open the floating list until any key is pressed.
-function M.open()
-    if #state.marks == 0 then
-        return
-    end
-
+---@param msg string|nil Message to show.
+function M.open(msg)
     if win and vim.api.nvim_win_is_valid(win) then close() end
 
     buf = vim.api.nvim_create_buf(false, true)
-    local lines = build_lines()
+    local lines = build_lines(msg)
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
     vim.api.nvim_set_option_value('modifiable', false, { buf = buf })
     vim.api.nvim_set_option_value('bufhidden', 'wipe', { buf = buf })
