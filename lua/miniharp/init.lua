@@ -70,7 +70,7 @@ local function ensure_dirchange(opts)
 
             local msg = (#state.marks > 0)
                 and ('Restored %d mark(s)'):format(#state.marks)
-                or ('No saved marks for %s'):format(vim.fn.fnamemodify(new_cwd, ':~:.'))
+                or 'No saved marks'
 
             vim.schedule(function() ui.open(msg) end)
 
