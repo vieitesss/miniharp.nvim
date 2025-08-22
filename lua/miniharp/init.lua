@@ -40,9 +40,9 @@ local function ensure_dirchange(opts)
     ensure_group()
     vim.api.nvim_create_autocmd('DirChanged', {
         group = state.augroup,
-        callback = function(ev)
-            local new_cwd = utils.norm((ev and ev.cwd) or vim.fn.getcwd())
-            local old_cwd = state.cwd or new_cwd
+        callback = function()
+            local new_cwd = utils.norm(vim.fn.getcwd())
+            local old_cwd = state.cwd
             if old_cwd == new_cwd then return end
 
             if opts.autosave ~= false and #state.marks > 0 then
