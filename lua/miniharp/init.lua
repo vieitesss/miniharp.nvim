@@ -68,10 +68,9 @@ local function ensure_dirchange(opts)
                 end
             end
 
-            local formatted_new = vim.fn.fnamemodify(new_cwd, ':~:.')
             local msg = (#state.marks > 0)
-                and ('Restored %d mark(s) for %s'):format(#state.marks, formatted_new)
-                or ('No saved marks for %s'):format(formatted_new)
+                and ('Restored %d mark(s)'):format(#state.marks)
+                or ('No saved marks for %s'):format(vim.fn.fnamemodify(new_cwd, ':~:.'))
 
             vim.schedule(function() ui.open(msg) end)
 
