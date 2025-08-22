@@ -45,7 +45,7 @@ local function ensure_dirchange(opts)
             local old_cwd = state.cwd
             if old_cwd == new_cwd then return end
 
-            if opts.autosave ~= false and #state.marks > 0 then
+            if opts.autosave ~= false then
                 local ok, err = storage.save(old_cwd)
                 if not ok then
                     vim.notify(
