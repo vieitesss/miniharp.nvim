@@ -1,3 +1,5 @@
+local utils = require('miniharp.utils')
+
 ---@class MiniharpMark
 ---@field file string -- absolute file path
 ---@field lnum integer -- 1-based line number
@@ -11,6 +13,11 @@
 
 local M ---@type MiniharpState
 
-M = { marks = {}, cwd = vim.fn.getcwd(), idx = 0, augroup = nil }
+M = {
+    marks = {},
+    cwd = utils.norm(vim.fn.getcwd()),
+    idx = 0,
+    augroup = nil
+}
 
 return M
