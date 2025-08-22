@@ -38,8 +38,6 @@ end
 
 local function ensure_dirchange(opts)
     ensure_group()
-    state.cwd = state.cwd or utils.norm(vim.fn.getcwd())
-
     vim.api.nvim_create_autocmd('DirChanged', {
         group = state.augroup,
         callback = function(ev)

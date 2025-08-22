@@ -17,7 +17,7 @@ end
 ---@param cwd? string
 ---@return string path
 local function session_path(cwd)
-    cwd = cwd or vim.fn.getcwd()
+    cwd = cwd or state.cwd or utils.norm(vim.fn.getcwd())
     local norm_cwd = utils.norm(cwd)
 
     local key
