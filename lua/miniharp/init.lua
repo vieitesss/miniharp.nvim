@@ -46,7 +46,7 @@ local function ensure_dirchange(opts)
             if old_cwd == new_cwd then return end
 
             if opts.autosave ~= false and #state.marks > 0 then
-                local ok, err = storage.save()
+                local ok, err = storage.save(old_cwd)
                 if not ok then
                     vim.notify(
                         ('miniharp: save failed for %s - %s')
@@ -58,7 +58,7 @@ local function ensure_dirchange(opts)
             core.clear()
 
             if opts.autoload then
-                local ok, err = storage.load()
+                local ok, err = storage.load(new_cwd)
                 if not ok then
                     if err and string.find(err, 'no session file for cwd') then
                         vim.notify('miniharp: ' .. err, vim.log.levels.INFO)
