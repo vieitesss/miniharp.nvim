@@ -40,10 +40,6 @@ end
 ---Open the floating list until any key is pressed.
 ---@param msg string|nil Message to show.
 function M.open(msg)
-    if #state.marks == 0 then
-        return
-    end
-
     if win and vim.api.nvim_win_is_valid(win) then close() end
 
     buf = vim.api.nvim_create_buf(false, true)
