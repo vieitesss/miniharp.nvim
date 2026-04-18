@@ -1,0 +1,69 @@
+name: Nightly
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nightly-release
+  cancel-in-progress: true
+
+jobs:
+  publish-nightly:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Update nightly tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -fa nightly -m "nightly release for ${GITHUB_SHA}"
+          git push origin refs/tags/nightly --force
+
+      - name: Build nightly notes
+        run: |
+          latest_stable="$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)"
+          {
+            echo "This is an unstable rolling build from \\`main\\`."
+            echo
+            echo "- Commit: \\`${GITHUB_SHA}\\`"
+            echo "- Date: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+            if [ -n "$latest_stable" ]; then
+              echo "- Base stable release: \\`${latest_stable}\\`"
+            else
+              echo "- Base stable release: none yet"
+            fi
+            echo
+            echo "## Recent changes"
+            if [ -n "$latest_stable" ]; then
+              git log --oneline --no-merges "${latest_stable}..HEAD" | sed 's/^/- /'
+            else
+              git log --oneline --no-merges -20 | sed 's/^/- /'
+            fi
+          } > "$RUNNER_TEMP/nightly-notes.md"
+
+      - name: Create or update nightly release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view nightly >/dev/null 2>&1; then
+            gh release edit nightly \
+              --title "nightly" \
+              --notes-file "$RUNNER_TEMP/nightly-notes.md" \
+              --prerelease
+          else
+            gh release create nightly \
+              --title "nightly" \
+              --notes-file "$RUNNER_TEMP/nightly-notes.md" \
+              --prerelease
+          fi
