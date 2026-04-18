@@ -1,9 +1,8 @@
 name: Nightly
 
 on:
-  push:
-    branches:
-      - main
+  schedule:
+    - cron: '0 8 * * *'
   workflow_dispatch:
 
 permissions:
@@ -23,7 +22,24 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check if nightly needs update
+        id: nightly_state
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          latest_main="$(git rev-parse HEAD)"
+          nightly_sha="$(gh release view nightly --json targetCommitish --jq '.targetCommitish' 2>/dev/null || true)"
+
+          if [ -n "$nightly_sha" ] && [ "$nightly_sha" = "$latest_main" ]; then
+            echo "needs_update=false" >> "$GITHUB_OUTPUT"
+            echo "Nightly already points at ${latest_main}; skipping."
+          else
+            echo "needs_update=true" >> "$GITHUB_OUTPUT"
+            echo "Nightly update required."
+          fi
+
       - name: Update nightly tag
+        if: steps.nightly_state.outputs.needs_update == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -31,6 +47,7 @@ jobs:
           git push origin refs/tags/nightly --force
 
       - name: Build nightly notes
+        if: steps.nightly_state.outputs.needs_update == 'true'
         run: |
           latest_stable="$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)"
           {
@@ -53,6 +70,7 @@ jobs:
           } > "$RUNNER_TEMP/nightly-notes.md"
 
       - name: Create or update nightly release
+        if: steps.nightly_state.outputs.needs_update == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
