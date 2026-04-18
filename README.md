@@ -52,41 +52,7 @@ require('miniharp').setup({
 {
   'vieitesss/miniharp.nvim',
   version = '*', -- latest stable release
-  opts = {
-    autoload = true,
-    autosave = true,
-    show_on_autoload = false,
-  },
-}
-```
-
-### Nightly
-
-Use nightly if you want the latest changes from `main` before the next stable tag.
-
-### vim.pack
-
-```lua
-vim.pack.add({
-  {
-    src = 'https://github.com/vieitesss/miniharp.nvim',
-    version = 'nightly',
-  }
-})
-
-require('miniharp').setup({
-  autoload = true,
-  autosave = true,
-  show_on_autoload = false,
-})
-```
-
-### lazy.nvim
-
-```lua
-{
-  'vieitesss/miniharp.nvim',
-  branch = 'main',
+  -- branch = 'main', -- latest nightly version
   opts = {
     autoload = true,
     autosave = true,
