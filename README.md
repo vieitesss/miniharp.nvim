@@ -24,10 +24,6 @@ Inspired by (and giving full credit to) **Harpoon** by [ThePrimeagen](https://gi
 
 ## Installation
 
-### Latest stable
-
-Use a release tag if you want stable behavior.
-
 ### vim.pack
 
 ```lua
