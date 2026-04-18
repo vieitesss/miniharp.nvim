@@ -10,24 +10,39 @@ Inspired by (and giving full credit to) **Harpoon** by [ThePrimeagen](https://gi
 - **Auto-remembers last cursor position** in each marked file when you switch buffers.
 - **Jump next/prev** through marked files from anywhere.
 - **Per-cwd persistence** with `autoload` / `autosave` (defaults **on**).
-- **Tiny floating list UI** (top-right):
-  - Shows the current marked files (relative paths).
-  - Closes on **any key**.
+- **Tiny floating list UI**:
+  - Shows compact file names plus parent paths.
+  - Marks and highlights the **current** file in the loop.
+  - Opens centered and focused.
+  - Closes with `q`, `<Esc>`, or `<C-c>`.
   - Optional auto-show after autoload via `show_on_autoload` (default: **off**).
+- **Quieter default flow**:
+  - No info notification when a cwd has no saved session yet.
+  - Mark/unmark actions show a short command-line status message.
+  - `next()` / `prev()` show compact loop feedback like `miniharp 2/3`.
+  - Missing files are removed automatically when encountered during navigation.
 
 ## Installation
+
+### Latest stable
+
+Use a release tag if you want stable behavior.
 
 ### vim.pack
 
 ```lua
 vim.pack.add({
-  { src = 'https://github.com/vieitesss/miniharp.nvim' }
+  {
+    src = 'https://github.com/vieitesss/miniharp.nvim',
+    version = vim.version.range("v*"), -- latest stable release
+    -- version = 'nightly', -- latest changes from main
+  }
 })
 
 require('miniharp').setup({
   autoload = true, -- load marks for this cwd on startup (default: true)
   autosave = true, -- save marks for this cwd on exit (default: true)
-  show_on_autoload = true, -- show popup list after a successful autoload (default: false)
+  show_on_autoload = false, -- show popup list after a successful autoload (default: false)
 })
 ```
 
@@ -36,10 +51,46 @@ require('miniharp').setup({
 ```lua
 {
   'vieitesss/miniharp.nvim',
+  version = '*', -- latest stable release
   opts = {
     autoload = true,
     autosave = true,
-    show_on_autoload = false 
+    show_on_autoload = false,
+  },
+}
+```
+
+### Nightly
+
+Use nightly if you want the latest changes from `main` before the next stable tag.
+
+### vim.pack
+
+```lua
+vim.pack.add({
+  {
+    src = 'https://github.com/vieitesss/miniharp.nvim',
+    version = 'nightly',
+  }
+})
+
+require('miniharp').setup({
+  autoload = true,
+  autosave = true,
+  show_on_autoload = false,
+})
+```
+
+### lazy.nvim
+
+```lua
+{
+  'vieitesss/miniharp.nvim',
+  branch = 'main',
+  opts = {
+    autoload = true,
+    autosave = true,
+    show_on_autoload = false,
   },
 }
 ```
@@ -61,7 +112,7 @@ Typical flow:
 2. Work as usual. When you leave that file, its last cursor spot is auto-saved.
 3. From anywhere, use `<C-n>` / `<C-p>` to jump around marked files.
 4. On a new Neovim session in the **same cwd**, marks auto-load (if `autoload = true`).  
-   Show the list on demand with `<leader>l`, or enable `show_on_autoload = true` to pop it up automatically.
+   Show the list on demand with `<leader>l`, or enable `show_on_autoload = true` to open it automatically after restore.
 
 ## API
 
@@ -81,7 +132,7 @@ All functions are exposed from `require('miniharp')`:
 - `next()` / `prev()` – Jump to next/previous file mark (wraps).
 - `list()` – Returns a deep copy of the marks table: `{ { file, lnum, col }, ... }`.
 - `clear()` – Remove all marks.
-- `show_list()` – Open the floating list UI (closes on any key).
+- `show_list()` – Open the floating list UI (`q`, `<Esc>`, or `<C-c>` to close).
 - `save()` – Manually persist marks for the current cwd.
 - `restore()` – Manually restore marks for the current cwd (if present).
 
@@ -89,4 +140,4 @@ All functions are exposed from `require('miniharp')`:
 
 - **Minimalism first.** Small surface area and simple behavior; no dependencies.
 - **Per-cwd persistence.** Keeps things project-scoped. Disable by setting `autoload = false` and/or `autosave = false`.
-- **UI stays out of the way.** The popup is read-only, top-right, and disappears on the next keypress; auto-show is opt-in.
+- **UI stays out of the way.** The popup is read-only, centered, and optimized for a tiny loop of files; auto-show is opt-in.
