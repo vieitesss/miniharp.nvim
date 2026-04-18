@@ -10,6 +10,8 @@ local utils = require('miniharp.utils')
 ---@field cwd string
 ---@field idx integer
 ---@field augroup? integer
+---@field ui_win? integer
+---@field ui_origin_win? integer
 
 local M ---@type MiniharpState
 
@@ -17,7 +19,9 @@ M = {
     marks = {},
     cwd = utils.norm(vim.fn.getcwd()),
     idx = 0,
-    augroup = nil
+    augroup = nil,
+    ui_win = nil,
+    ui_origin_win = nil,
 }
 
 return M

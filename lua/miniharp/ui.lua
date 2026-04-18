@@ -2,74 +2,239 @@
 local M = {}
 
 local state = require('miniharp.state')
+local utils = require('miniharp.utils')
 
 local ns = vim.api.nvim_create_namespace('MiniharpUI')
 local win, buf
+local last_opts = {}
+
+local function has_win(id)
+    return id and vim.api.nvim_win_is_valid(id)
+end
+
+local function has_buf(id)
+    return id and vim.api.nvim_buf_is_valid(id)
+end
+
+local function split_path(path)
+    local rel = utils.pretty(path)
+    local dir = vim.fn.fnamemodify(rel, ':h')
+    local name = vim.fn.fnamemodify(rel, ':t')
+    if dir == '.' then dir = '' end
+    return name, dir
+end
+
+---@param opts? { msg?: string }
+---@return string[], table
+local function build_lines(opts)
+    opts = opts or {}
+    local lines = { 'Miniharp marks' }
+    local row_offset = #lines
+    local current_file = ''
+    local current_idx
+    local meta = {
+        row_offset = row_offset,
+        rows = {},
+        current_idx = nil,
+        close_line = nil,
+    }
+
+    if has_win(state.ui_origin_win) then
+        local origin_buf = vim.api.nvim_win_get_buf(state.ui_origin_win)
+        current_file = utils.bufname(origin_buf)
+    else
+        current_file = utils.bufname()
+    end
+
+    for i, m in ipairs(state.marks) do
+        if m.file == current_file then
+            current_idx = i
+            break
+        end
+    end
+
+    meta.current_idx = current_idx
+
+    if opts.msg and opts.msg ~= '' then
+        lines[#lines + 1] = ' ' .. opts.msg
+        row_offset = #lines
+        meta.row_offset = row_offset
+    end
+
+    if #state.marks == 0 then
+        lines[#lines + 1] = ' No marks yet'
+        lines[#lines + 1] = ' Toggle current file to start a loop'
+    else
+        for i, m in ipairs(state.marks) do
+            local marker = current_idx == i and '*' or ' '
+
+            local name, dir = split_path(m.file)
+            local prefix = string.format('%s %d. ', marker, i)
+            local row = prefix .. name
+            local row_meta = {
+                line = #lines + 1,
+                marker_start = 0,
+                marker_end = 1,
+                number_start = 2,
+                number_end = #prefix,
+                name_start = #prefix,
+                name_end = #prefix + #name,
+                dir_start = nil,
+                dir_end = nil,
+            }
+            if dir ~= '' then
+                row = row .. '  ' .. dir
+                row_meta.dir_start = #prefix + #name + 2
+                row_meta.dir_end = #row
+            end
+
+            lines[#lines + 1] = row
+            meta.rows[i] = row_meta
+        end
+
+        lines[#lines + 1] = ''
+        lines[#lines + 1] = ' Close: [q] [esc] [ctrl-c]'
+        meta.close_line = #lines
+    end
+
+    return lines, meta
+end
+
+local function add_token_highlight(line, token, start_col)
+    local col = string.find(line, token, start_col or 1, true)
+    if not col then return end
+    return col - 1, col - 1 + #token
+end
+
+local function apply_highlights(lines, meta)
+    vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
+    vim.api.nvim_buf_add_highlight(buf, ns, 'Title', 0, 0, -1)
+
+    if meta.row_offset > 1 then
+        vim.api.nvim_buf_add_highlight(buf, ns, 'Comment', 1, 0, -1)
+    end
+
+    if #state.marks == 0 then
+        vim.api.nvim_buf_add_highlight(buf, ns, 'Comment', meta.row_offset, 0, -1)
+        vim.api.nvim_buf_add_highlight(buf, ns, 'Comment', meta.row_offset + 1, 0, -1)
+        return
+    end
+
+    for i, row in ipairs(meta.rows) do
+        if row.dir_start and row.dir_end then
+            vim.api.nvim_buf_add_highlight(buf, ns, 'Comment', row.line - 1, row.dir_start, row.dir_end)
+        end
+
+        if meta.current_idx == i then
+            vim.api.nvim_buf_add_highlight(buf, ns, 'String', row.line - 1, row.marker_start, row.marker_end)
+            vim.api.nvim_buf_add_highlight(buf, ns, 'String', row.line - 1, row.number_start, row.number_end)
+            vim.api.nvim_buf_add_highlight(buf, ns, 'String', row.line - 1, row.name_start, row.name_end)
+        end
+    end
+
+    if meta.close_line then
+        local line = lines[meta.close_line]
+        vim.api.nvim_buf_add_highlight(buf, ns, 'Comment', meta.close_line - 1, 0, 7)
+
+        for _, token in ipairs({ '[q]', '[esc]', '[ctrl-c]' }) do
+            local start_col, end_col = add_token_highlight(line, token)
+            if start_col and end_col then
+                vim.api.nvim_buf_add_highlight(buf, ns, 'Special', meta.close_line - 1, start_col, end_col)
+            end
+        end
+    end
+end
+
+local function position_window(lines)
+    local width = 0
+    for _, line in ipairs(lines) do
+        width = math.max(width, vim.fn.strdisplaywidth(line))
+    end
+
+    width = math.min(width + 4, math.max(28, math.floor(vim.o.columns * 0.6)))
+    local height = math.min(#lines, math.max(4, math.floor(vim.o.lines * 0.6)))
+    local row = math.max(1, math.floor((vim.o.lines - height) / 2) - 1)
+    local col = math.max(0, math.floor((vim.o.columns - width) / 2))
+
+    return width, height, row, col
+end
+
+local function render()
+    if not has_buf(buf) then return end
+
+    local lines, meta = build_lines(last_opts)
+    vim.api.nvim_set_option_value('modifiable', true, { buf = buf })
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    vim.api.nvim_set_option_value('modifiable', false, { buf = buf })
+    apply_highlights(lines, meta)
+
+    if has_win(win) then
+        local width, height, row, col = position_window(lines)
+        vim.api.nvim_win_set_config(win, {
+            relative = 'editor',
+            row = row,
+            col = col,
+            width = width,
+            height = height,
+        })
+    end
+end
 
 local function close()
-    if win and vim.api.nvim_win_is_valid(win) then
+    local origin = state.ui_origin_win
+
+    state.ui_win = nil
+    state.ui_origin_win = nil
+
+    if has_win(win) then
         pcall(vim.api.nvim_win_close, win, true)
     end
 
-    if buf and vim.api.nvim_buf_is_valid(buf) then
+    if has_buf(buf) then
         pcall(vim.api.nvim_buf_delete, buf, { force = true })
     end
 
     win, buf = nil, nil
-    vim.on_key(nil, ns)
+    last_opts = {}
+
+    if has_win(origin) then
+        pcall(vim.api.nvim_set_current_win, origin)
+    end
 end
 
----@param msg string|nil
-local function build_lines(msg)
-    local lines = { 'Miniharp marks' }
-    if msg and msg ~= '' then
-        lines[#lines + 1] = ' ' .. msg
-    end
-    if #state.marks == 0 then
-        lines[#lines + 1] = ' (no marks)'
-    else
-        for i, m in ipairs(state.marks) do
-            local rel = vim.fn.fnamemodify(m.file, ':.')
-            lines[#lines + 1] = string.format(' %d. %s', i, rel)
-        end
-    end
-
-    return lines
+function M.refresh()
+    if not has_win(win) or not has_buf(buf) then return end
+    render()
 end
 
----Open the floating list until any key is pressed.
----@param msg string|nil Message to show.
-function M.open(msg)
-    if win and vim.api.nvim_win_is_valid(win) then close() end
+---@param opts? { msg?: string }
+function M.open(opts)
+    if has_win(win) then close() end
+
+    last_opts = opts or {}
+    state.ui_origin_win = vim.api.nvim_get_current_win()
 
     buf = vim.api.nvim_create_buf(false, true)
-    local lines = build_lines(msg)
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
     vim.api.nvim_set_option_value('modifiable', false, { buf = buf })
     vim.api.nvim_set_option_value('bufhidden', 'wipe', { buf = buf })
     vim.api.nvim_set_option_value('filetype', 'miniharp', { buf = buf })
     vim.api.nvim_set_option_value('buftype', 'nofile', { buf = buf })
 
-    local width = 0
-    for _, l in ipairs(lines) do
-        width = math.max(width, vim.fn.strdisplaywidth(l))
-    end
+    local lines = build_lines(last_opts)
+    local width, height, row, col = position_window(lines)
 
-    width = math.min(width + 2, math.floor(vim.o.columns * 0.45))
-    local height = math.min(#lines, math.max(3, math.floor(vim.o.lines * 0.5)))
-    local col = math.max(0, vim.o.columns - width - 1)
-    local row = 1
-
-    win = vim.api.nvim_open_win(buf, false, {
-        relative  = 'editor',
-        row       = row,
-        col       = col,
-        width     = width,
-        height    = height,
-        style     = 'minimal',
-        border    = 'rounded',
+    win = vim.api.nvim_open_win(buf, true, {
+        relative = 'editor',
+        row = row,
+        col = col,
+        width = width,
+        height = height,
+        style = 'minimal',
+        border = 'rounded',
         noautocmd = true,
     })
+
+    state.ui_win = win
 
     local wo = vim.wo[win]
     wo.wrap = false
@@ -78,8 +243,11 @@ function M.open(msg)
     wo.relativenumber = false
     wo.signcolumn = 'no'
 
-    -- Close on ANY key
-    vim.on_key(function() close() end, ns)
+    vim.keymap.set('n', 'q', close, { buffer = buf, silent = true, nowait = true, desc = 'miniharp: close list' })
+    vim.keymap.set('n', '<Esc>', close, { buffer = buf, silent = true, nowait = true, desc = 'miniharp: close list' })
+    vim.keymap.set('n', '<C-c>', close, { buffer = buf, silent = true, nowait = true, desc = 'miniharp: close list' })
+
+    render()
 end
 
 return M

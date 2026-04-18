@@ -7,6 +7,10 @@ local core = require('miniharp.core')
 local storage = require('miniharp.storage')
 local ui = require('miniharp.ui')
 
+local function is_missing_session(err)
+    return err and string.find(err, 'no session file for cwd', 1, true)
+end
+
 -- Create (or reuse) the plugin augroup
 local function ensure_group()
     if state.augroup then return end
@@ -59,20 +63,17 @@ local function ensure_dirchange(opts)
 
             if opts.autoload then
                 local ok, err = storage.load(new_cwd)
-                if not ok then
-                    if err and string.find(err, 'no session file for cwd') then
-                        vim.notify('miniharp: ' .. err, vim.log.levels.INFO)
-                    else
-                        vim.notify('miniharp: ' .. (err or 'unknown error'), vim.log.levels.WARN)
-                    end
+                if not ok and not is_missing_session(err) then
+                    vim.notify('miniharp: ' .. (err or 'unknown error'), vim.log.levels.WARN)
                 end
             end
 
-            local msg = (#state.marks > 0)
-                and ('Restored %d mark(s)'):format(#state.marks)
-                or ''
-
-            vim.schedule(function() ui.open(msg) end)
+            if opts.show_on_autoload and #state.marks > 0 then
+                local msg = ('Restored %d mark(s)'):format(#state.marks)
+                vim.schedule(function()
+                    ui.open({ msg = msg })
+                end)
+            end
 
             state.cwd = new_cwd
         end,
@@ -82,7 +83,7 @@ end
 
 M = vim.tbl_extend("keep", {}, core)
 
-function M.show_list() ui.open() end
+function M.show_list() ui.open({}) end
 
 ---Persist current state for the working directory.
 function M.save()
@@ -96,7 +97,8 @@ end
 function M.restore()
     local ok, err = storage.load()
     if not ok then
-        vim.notify('miniharp: ' .. (err or 'unknown error'), vim.log.levels.ERROR)
+        local level = is_missing_session(err) and vim.log.levels.INFO or vim.log.levels.ERROR
+        vim.notify('miniharp: ' .. (err or 'unknown error'), level)
     end
 end
 
@@ -119,13 +121,13 @@ function M.setup(opts)
     if autoload then
         local ok, err = storage.load()
         if not ok then
-            if err and string.find(err, 'no session file for cwd') then
-                vim.notify('miniharp: ' .. err, vim.log.levels.INFO)
-            else
+            if not is_missing_session(err) then
                 vim.notify('miniharp: ' .. (err or 'unknown error'), vim.log.levels.WARN)
             end
         elseif #state.marks > 0 and show_ui then
-            vim.schedule(function() ui.open() end)
+            vim.schedule(function()
+                ui.open({ msg = ('Restored %d mark(s)'):format(#state.marks) })
+            end)
         end
     end
 
@@ -133,7 +135,11 @@ function M.setup(opts)
         ensure_persist_autosave()
     end
 
-    ensure_dirchange({ autoload = autoload, autosave = autosave })
+    ensure_dirchange({
+        autoload = autoload,
+        autosave = autosave,
+        show_on_autoload = show_ui,
+    })
 end
 
 return M
