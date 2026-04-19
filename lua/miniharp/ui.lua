@@ -7,6 +7,18 @@ local utils = require('miniharp.utils')
 local ns = vim.api.nvim_create_namespace('MiniharpUI')
 local win, buf
 local last_opts = {}
+local config = {
+    position = 'center',
+    show_hints = true,
+    enter = true,
+}
+local valid_positions = {
+    center = true,
+    ['top-left'] = true,
+    ['top-right'] = true,
+    ['bottom-left'] = true,
+    ['bottom-right'] = true,
+}
 
 local function has_win(id)
     return id and vim.api.nvim_win_is_valid(id)
@@ -14,6 +26,22 @@ end
 
 local function has_buf(id)
     return id and vim.api.nvim_buf_is_valid(id)
+end
+
+---@param position? string
+---@return string
+local function normalize_position(position)
+    if type(position) ~= 'string' then return 'center' end
+
+    position = position:lower():gsub('[%s_]+', '-')
+    if valid_positions[position] then return position end
+
+    vim.notify(
+        ("miniharp: invalid ui.position '%s', using 'center'"):format(position),
+        vim.log.levels.WARN
+    )
+
+    return 'center'
 end
 
 local function split_path(path)
@@ -92,9 +120,11 @@ local function build_lines(opts)
             meta.rows[i] = row_meta
         end
 
-        lines[#lines + 1] = ''
-        lines[#lines + 1] = ' Close: [q] [esc] [ctrl-c]'
-        meta.close_line = #lines
+        if config.show_hints then
+            lines[#lines + 1] = ''
+            lines[#lines + 1] = ' Close: [q] [esc] [ctrl-c]'
+            meta.close_line = #lines
+        end
     end
 
     return lines, meta
@@ -153,8 +183,20 @@ local function position_window(lines)
 
     width = math.min(width + 4, math.max(28, math.floor(vim.o.columns * 0.6)))
     local height = math.min(#lines, math.max(4, math.floor(vim.o.lines * 0.6)))
+    local max_row = math.max(1, vim.o.lines - height - 2)
+    local max_col = math.max(0, vim.o.columns - width)
     local row = math.max(1, math.floor((vim.o.lines - height) / 2) - 1)
     local col = math.max(0, math.floor((vim.o.columns - width) / 2))
+
+    if config.position == 'top-left' then
+        row, col = 1, 0
+    elseif config.position == 'top-right' then
+        row, col = 1, max_col
+    elseif config.position == 'bottom-left' then
+        row, col = max_row, 0
+    elseif config.position == 'bottom-right' then
+        row, col = max_row, max_col
+    end
 
     return width, height, row, col
 end
@@ -202,9 +244,29 @@ local function close()
     end
 end
 
+function M.is_open()
+    return has_win(win) and has_buf(buf)
+end
+
+function M.close()
+    if not M.is_open() then return end
+    close()
+end
+
 function M.refresh()
     if not has_win(win) or not has_buf(buf) then return end
     render()
+end
+
+---@param opts? { position?: string, show_hints?: boolean, enter?: boolean }
+function M.configure(opts)
+    opts = opts or {}
+
+    config = {
+        position = normalize_position(opts.position),
+        show_hints = opts.show_hints ~= false,
+        enter = opts.enter ~= false,
+    }
 end
 
 ---@param opts? { msg?: string }
@@ -223,7 +285,7 @@ function M.open(opts)
     local lines = build_lines(last_opts)
     local width, height, row, col = position_window(lines)
 
-    win = vim.api.nvim_open_win(buf, true, {
+    win = vim.api.nvim_open_win(buf, config.enter, {
         relative = 'editor',
         row = row,
         col = col,
