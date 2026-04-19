@@ -42,9 +42,39 @@ jobs:
             exit 1
           fi
 
+      - name: Generate release notes
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          previous_tag=""
+          while IFS= read -r tag; do
+            if [ "$tag" != "$GITHUB_REF_NAME" ]; then
+              previous_tag="$tag"
+              break
+            fi
+          done <<EOF
+          $(git tag --sort=-v:refname --list 'v*')
+          EOF
+
+          if [ -n "$previous_tag" ]; then
+            commit_range="${previous_tag}..${GITHUB_SHA}"
+            changelog_url="https://github.com/${REPOSITORY}/compare/${previous_tag}...${GITHUB_REF_NAME}"
+          else
+            commit_range="$GITHUB_SHA"
+            changelog_url="https://github.com/${REPOSITORY}/commits/${GITHUB_REF_NAME}"
+          fi
+
+          {
+            echo "## What's Changed"
+            echo
+            git log --reverse --pretty='* %s (`%h`)' "$commit_range"
+            echo
+            echo "**Full Changelog**: ${changelog_url}"
+          } > "$RUNNER_TEMP/release-notes.md"
+
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
-          generate_release_notes: true
+          body_path: ${{ runner.temp }}/release-notes.md
           make_latest: true
