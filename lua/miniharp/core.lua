@@ -16,7 +16,9 @@ end
 ---@return integer|nil, MiniharpMark|nil
 local function find_mark(file)
     for i, m in ipairs(state.marks) do
-        if m.file == file then return i, m end
+        if m.file == file then
+            return i, m
+        end
     end
 end
 
@@ -42,15 +44,25 @@ local function jump_to(i)
             state.idx = math.max(0, state.idx - 1)
         end
 
-        vim.notify(('miniharp: removed missing mark %s'):format(utils.pretty(m.file)), vim.log.levels.WARN)
+        vim.notify(
+            ('miniharp: removed missing mark %s'):format(utils.pretty(m.file)),
+            vim.log.levels.WARN
+        )
         return false, 'missing-file'
     end
 
     state.idx = i
 
     local target_win = vim.api.nvim_get_current_win()
-    if state.ui_win and vim.api.nvim_win_is_valid(state.ui_win) and target_win == state.ui_win then
-        if state.ui_origin_win and vim.api.nvim_win_is_valid(state.ui_origin_win) then
+    if
+        state.ui_win
+        and vim.api.nvim_win_is_valid(state.ui_win)
+        and target_win == state.ui_win
+    then
+        if
+            state.ui_origin_win
+            and vim.api.nvim_win_is_valid(state.ui_origin_win)
+        then
             target_win = state.ui_origin_win
         end
     end
@@ -65,7 +77,11 @@ local function jump_to(i)
         pcall(vim.api.nvim_win_set_cursor, 0, { l, m.col })
     end)
 
-    vim.api.nvim_echo({ { ('miniharp %d/%d'):format(i, #state.marks), 'ModeMsg' } }, false, {})
+    vim.api.nvim_echo(
+        { { ('miniharp %d/%d'):format(i, #state.marks), 'ModeMsg' } },
+        false,
+        {}
+    )
     ui.refresh()
     return true
 end
@@ -77,17 +93,27 @@ local function cycle(step)
     end
 
     local cursor = state.idx
-    if cursor < 0 then cursor = 0 end
+    if cursor < 0 then
+        cursor = 0
+    end
 
     local attempts = #state.marks
     while attempts > 0 and #state.marks > 0 do
         local i = cursor + step
-        if i > #state.marks then i = 1 end
-        if i < 1 then i = #state.marks end
+        if i > #state.marks then
+            i = 1
+        end
+        if i < 1 then
+            i = #state.marks
+        end
 
         local ok, reason = jump_to(i)
-        if ok then return end
-        if reason ~= 'missing-file' then return end
+        if ok then
+            return
+        end
+        if reason ~= 'missing-file' then
+            return
+        end
 
         attempts = attempts - 1
         if step > 0 then
@@ -110,7 +136,10 @@ end
 function M.add_file()
     local file = utils.bufname()
     if file == '' then
-        vim.notify('miniharp: cannot mark an unnamed buffer', vim.log.levels.WARN)
+        vim.notify(
+            'miniharp: cannot mark an unnamed buffer',
+            vim.log.levels.WARN
+        )
         return
     end
 
@@ -120,10 +149,22 @@ function M.add_file()
     if i then
         state.marks[i].lnum, state.marks[i].col = l, c
         state.idx = i
-        echo_status(('miniharp updated %d/%d %s'):format(i, #state.marks, utils.pretty(file)))
+        echo_status(
+            ('miniharp updated %d/%d %s'):format(
+                i,
+                #state.marks,
+                utils.pretty(file)
+            )
+        )
     else
         add_mark({ file = file, lnum = l, col = c })
-        echo_status(('miniharp marked %d/%d %s'):format(state.idx, #state.marks, utils.pretty(file)))
+        echo_status(
+            ('miniharp marked %d/%d %s'):format(
+                state.idx,
+                #state.marks,
+                utils.pretty(file)
+            )
+        )
     end
 
     ui.refresh()
@@ -137,8 +178,16 @@ function M.toggle_file()
     if i then
         table.remove(state.marks, i)
 
-        if state.idx > #state.marks then state.idx = #state.marks end
-        echo_status(('miniharp removed %d/%d %s'):format(math.max(state.idx, 0), #state.marks, utils.pretty(file)))
+        if state.idx > #state.marks then
+            state.idx = #state.marks
+        end
+        echo_status(
+            ('miniharp removed %d/%d %s'):format(
+                math.max(state.idx, 0),
+                #state.marks,
+                utils.pretty(file)
+            )
+        )
     else
         M.add_file()
         return
@@ -153,7 +202,9 @@ end
 ---@param c integer
 function M.update_last_for_file(file, l, c)
     local i, m = find_mark(file)
-    if i then m.lnum, m.col = l, c end
+    if i then
+        m.lnum, m.col = l, c
+    end
 end
 
 function M.next()
@@ -165,7 +216,9 @@ function M.prev()
 end
 
 ---@return MiniharpMark[]
-function M.list() return vim.deepcopy(state.marks) end
+function M.list()
+    return vim.deepcopy(state.marks)
+end
 
 function M.clear()
     state.marks = {}

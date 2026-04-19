@@ -13,7 +13,9 @@ end
 
 -- Create (or reuse) the plugin augroup
 local function ensure_group()
-    if state.augroup then return end
+    if state.augroup then
+        return
+    end
     state.augroup = vim.api.nvim_create_augroup('Miniharp', { clear = true })
 end
 
@@ -23,7 +25,10 @@ local function ensure_autosave_positions()
     vim.api.nvim_create_autocmd('BufLeave', {
         group = state.augroup,
         callback = function(args)
-            local file = utils.bufname(args.buf); if file == '' then return end
+            local file = utils.bufname(args.buf)
+            if file == '' then
+                return
+            end
             local l, c = utils.cursor(0)
             core.update_last_for_file(file, l, c)
         end,
@@ -35,7 +40,9 @@ local function ensure_persist_autosave()
     ensure_group()
     vim.api.nvim_create_autocmd('VimLeavePre', {
         group = state.augroup,
-        callback = function() storage.save() end,
+        callback = function()
+            storage.save()
+        end,
         desc = 'miniharp: save marks session for cwd',
     })
 end
@@ -47,15 +54,20 @@ local function ensure_dirchange(opts)
         callback = function()
             local new_cwd = utils.norm(vim.fn.getcwd())
             local old_cwd = state.cwd
-            if old_cwd == new_cwd then return end
+            if old_cwd == new_cwd then
+                return
+            end
 
             if opts.autosave ~= false then
                 local ok, err = storage.save(old_cwd)
                 if not ok then
                     vim.notify(
-                        ('miniharp: save failed for %s - %s')
-                        :format(vim.fn.fnamemodify(old_cwd, ':~:.'), err or 'unknown error'),
-                        vim.log.levels.WARN)
+                        ('miniharp: save failed for %s - %s'):format(
+                            vim.fn.fnamemodify(old_cwd, ':~:.'),
+                            err or 'unknown error'
+                        ),
+                        vim.log.levels.WARN
+                    )
                 end
             end
 
@@ -64,7 +76,10 @@ local function ensure_dirchange(opts)
             if opts.autoload then
                 local ok, err = storage.load(new_cwd)
                 if not ok and not is_missing_session(err) then
-                    vim.notify('miniharp: ' .. (err or 'unknown error'), vim.log.levels.WARN)
+                    vim.notify(
+                        'miniharp: ' .. (err or 'unknown error'),
+                        vim.log.levels.WARN
+                    )
                 end
             end
 
@@ -81,7 +96,7 @@ local function ensure_dirchange(opts)
     })
 end
 
-M = vim.tbl_extend("keep", {}, core)
+M = vim.tbl_extend('keep', {}, core)
 
 function M.show_list()
     if ui.is_open() then
@@ -96,7 +111,10 @@ end
 function M.save()
     local ok, err = storage.save()
     if not ok then
-        vim.notify('miniharp: ' .. (err or 'unknown error'), vim.log.levels.ERROR)
+        vim.notify(
+            'miniharp: ' .. (err or 'unknown error'),
+            vim.log.levels.ERROR
+        )
     end
 end
 
@@ -104,7 +122,8 @@ end
 function M.restore()
     local ok, err = storage.load()
     if not ok then
-        local level = is_missing_session(err) and vim.log.levels.INFO or vim.log.levels.ERROR
+        local level = is_missing_session(err) and vim.log.levels.INFO
+            or vim.log.levels.ERROR
         vim.notify('miniharp: ' .. (err or 'unknown error'), level)
     end
 end
@@ -136,7 +155,10 @@ function M.setup(opts)
         local ok, err = storage.load()
         if not ok then
             if not is_missing_session(err) then
-                vim.notify('miniharp: ' .. (err or 'unknown error'), vim.log.levels.WARN)
+                vim.notify(
+                    'miniharp: ' .. (err or 'unknown error'),
+                    vim.log.levels.WARN
+                )
             end
         elseif #state.marks > 0 and show_ui then
             vim.schedule(function()

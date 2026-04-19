@@ -31,10 +31,14 @@ end
 ---@param position? string
 ---@return string
 local function normalize_position(position)
-    if type(position) ~= 'string' then return 'center' end
+    if type(position) ~= 'string' then
+        return 'center'
+    end
 
     position = position:lower():gsub('[%s_]+', '-')
-    if valid_positions[position] then return position end
+    if valid_positions[position] then
+        return position
+    end
 
     vim.notify(
         ("miniharp: invalid ui.position '%s', using 'center'"):format(position),
@@ -48,7 +52,9 @@ local function split_path(path)
     local rel = utils.pretty(path)
     local dir = vim.fn.fnamemodify(rel, ':h')
     local name = vim.fn.fnamemodify(rel, ':t')
-    if dir == '.' then dir = '' end
+    if dir == '.' then
+        dir = ''
+    end
     return name, dir
 end
 
@@ -132,7 +138,9 @@ end
 
 local function add_token_highlight(line, token, start_col)
     local col = string.find(line, token, start_col or 1, true)
-    if not col then return end
+    if not col then
+        return
+    end
     return col - 1, col - 1 + #token
 end
 
@@ -145,31 +153,87 @@ local function apply_highlights(lines, meta)
     end
 
     if #state.marks == 0 then
-        vim.api.nvim_buf_add_highlight(buf, ns, 'Comment', meta.row_offset, 0, -1)
-        vim.api.nvim_buf_add_highlight(buf, ns, 'Comment', meta.row_offset + 1, 0, -1)
+        vim.api.nvim_buf_add_highlight(
+            buf,
+            ns,
+            'Comment',
+            meta.row_offset,
+            0,
+            -1
+        )
+        vim.api.nvim_buf_add_highlight(
+            buf,
+            ns,
+            'Comment',
+            meta.row_offset + 1,
+            0,
+            -1
+        )
         return
     end
 
     for i, row in ipairs(meta.rows) do
         if row.dir_start and row.dir_end then
-            vim.api.nvim_buf_add_highlight(buf, ns, 'Comment', row.line - 1, row.dir_start, row.dir_end)
+            vim.api.nvim_buf_add_highlight(
+                buf,
+                ns,
+                'Comment',
+                row.line - 1,
+                row.dir_start,
+                row.dir_end
+            )
         end
 
         if meta.current_idx == i then
-            vim.api.nvim_buf_add_highlight(buf, ns, 'String', row.line - 1, row.marker_start, row.marker_end)
-            vim.api.nvim_buf_add_highlight(buf, ns, 'String', row.line - 1, row.number_start, row.number_end)
-            vim.api.nvim_buf_add_highlight(buf, ns, 'String', row.line - 1, row.name_start, row.name_end)
+            vim.api.nvim_buf_add_highlight(
+                buf,
+                ns,
+                'String',
+                row.line - 1,
+                row.marker_start,
+                row.marker_end
+            )
+            vim.api.nvim_buf_add_highlight(
+                buf,
+                ns,
+                'String',
+                row.line - 1,
+                row.number_start,
+                row.number_end
+            )
+            vim.api.nvim_buf_add_highlight(
+                buf,
+                ns,
+                'String',
+                row.line - 1,
+                row.name_start,
+                row.name_end
+            )
         end
     end
 
     if meta.close_line then
         local line = lines[meta.close_line]
-        vim.api.nvim_buf_add_highlight(buf, ns, 'Comment', meta.close_line - 1, 0, 7)
+        vim.api.nvim_buf_add_highlight(
+            buf,
+            ns,
+            'Comment',
+            meta.close_line - 1,
+            0,
+            7
+        )
 
         for _, token in ipairs({ '[q]', '[esc]', '[ctrl-c]' }) do
             local start_col, end_col = add_token_highlight(line, token)
             if start_col and end_col then
-                vim.api.nvim_buf_add_highlight(buf, ns, 'Special', meta.close_line - 1, start_col, end_col)
+                vim.api.nvim_buf_add_highlight(
+                    buf,
+                    ns,
+                    'Special',
+                    meta.close_line - 1,
+                    start_col,
+                    end_col
+                )
             end
         end
     end
@@ -202,7 +266,9 @@ local function position_window(lines)
 end
 
 local function render()
-    if not has_buf(buf) then return end
+    if not has_buf(buf) then
+        return
+    end
 
     local lines, meta = build_lines(last_opts)
     vim.api.nvim_set_option_value('modifiable', true, { buf = buf })
@@ -249,12 +315,16 @@ function M.is_open()
 end
 
 function M.close()
-    if not M.is_open() then return end
+    if not M.is_open() then
+        return
+    end
     close()
 end
 
 function M.refresh()
-    if not has_win(win) or not has_buf(buf) then return end
+    if not has_win(win) or not has_buf(buf) then
+        return
+    end
     render()
 end
 
@@ -271,7 +341,9 @@ end
 
 ---@param opts? { msg?: string }
 function M.open(opts)
-    if has_win(win) then close() end
+    if has_win(win) then
+        close()
+    end
 
     last_opts = opts or {}
     state.ui_origin_win = vim.api.nvim_get_current_win()
@@ -305,9 +377,39 @@ function M.open(opts)
     wo.relativenumber = false
     wo.signcolumn = 'no'
 
-    vim.keymap.set('n', 'q', close, { buffer = buf, silent = true, nowait = true, desc = 'miniharp: close list' })
-    vim.keymap.set('n', '<Esc>', close, { buffer = buf, silent = true, nowait = true, desc = 'miniharp: close list' })
-    vim.keymap.set('n', '<C-c>', close, { buffer = buf, silent = true, nowait = true, desc = 'miniharp: close list' })
+    vim.keymap.set(
+        'n',
+        'q',
+        close,
+        {
+            buffer = buf,
+            silent = true,
+            nowait = true,
+            desc = 'miniharp: close list',
+        }
+    )
+    vim.keymap.set(
+        'n',
+        '<Esc>',
+        close,
+        {
+            buffer = buf,
+            silent = true,
+            nowait = true,
+            desc = 'miniharp: close list',
+        }
+    )
+    vim.keymap.set(
+        'n',
+        '<C-c>',
+        close,
+        {
+            buffer = buf,
+            silent = true,
+            nowait = true,
+            desc = 'miniharp: close list',
+        }
+    )
 
     render()
 end

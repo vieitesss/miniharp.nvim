@@ -22,7 +22,7 @@ local function session_path(cwd)
 
     local key
     local ok, result = pcall(vim.fn.sha256, norm_cwd)
-    if ok and type(result) == "string" and result ~= "" then
+    if ok and type(result) == 'string' and result ~= '' then
         key = result
     else
         key = norm_cwd:gsub('[^%w]+', '_')
@@ -32,7 +32,6 @@ local function session_path(cwd)
     vim.fn.mkdir(dir, 'p')
     return dir .. '/session-' .. key .. '.json'
 end
-
 
 ---Save current marks for the cwd into stdpath('state'|'data')/miniharp/sessions.
 ---@param cwd? string
@@ -45,11 +44,15 @@ function M.save(cwd)
     }
 
     local ok, json = pcall(utils.json_encode, payload)
-    if not ok then return false, 'miniharp: JSON encode failed' end
+    if not ok then
+        return false, 'miniharp: JSON encode failed'
+    end
 
     local lines = vim.split(json, '\n', { plain = true })
     local w_ok, err = pcall(vim.fn.writefile, lines, path)
-    if not w_ok then return false, ('miniharp: write failed: %s'):format(err or path) end
+    if not w_ok then
+        return false, ('miniharp: write failed: %s'):format(err or path)
+    end
 
     return true
 end
@@ -66,7 +69,9 @@ function M.load(cwd)
     local ok_read, content = pcall(function()
         return table.concat(vim.fn.readfile(path), '\n')
     end)
-    if not ok_read then return false, 'miniharp: read failed' end
+    if not ok_read then
+        return false, 'miniharp: read failed'
+    end
 
     local ok_json, data = pcall(utils.json_decode, content)
     if not ok_json or type(data) ~= 'table' then
@@ -76,7 +81,8 @@ function M.load(cwd)
     local restored = {}
     if type(data.marks) == 'table' then
         for _, m in ipairs(data.marks) do
-            if m
+            if
+                m
                 and type(m.file) == 'string'
                 and tonumber(m.lnum)
                 and tonumber(m.col)
@@ -84,7 +90,7 @@ function M.load(cwd)
                 table.insert(restored, {
                     file = utils.norm(m.file),
                     lnum = tonumber(m.lnum) or 1,
-                    col  = tonumber(m.col) or 0,
+                    col = tonumber(m.col) or 0,
                 })
             end
         end
