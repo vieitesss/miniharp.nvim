@@ -13,8 +13,9 @@ Inspired by (and giving full credit to) **Harpoon** by [ThePrimeagen](https://gi
 - **Tiny floating list UI**:
   - Shows compact file names plus parent paths.
   - Marks and highlights the **current** file in the loop.
-  - Opens centered and focused.
-  - Closes with `q`, `<Esc>`, or `<C-c>`.
+  - Can open centered or in any editor corner.
+  - Can open focused or leave you in the current window.
+  - Optional close hints; closes with `q`, `<Esc>`, `<C-c>`, or by calling `show_list()` again.
   - Optional auto-show after autoload via `show_on_autoload` (default: **off**).
 - **Quieter default flow**:
   - No info notification when a cwd has no saved session yet.
@@ -39,6 +40,11 @@ require('miniharp').setup({
   autoload = true, -- load marks for this cwd on startup (default: true)
   autosave = true, -- save marks for this cwd on exit (default: true)
   show_on_autoload = false, -- show popup list after a successful autoload (default: false)
+  ui = {
+    position = 'center', -- 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+    show_hints = true, -- show close hints in the floating list (default: true)
+    enter = true, -- enter the floating window when it opens (default: true)
+  },
 })
 ```
 
@@ -53,6 +59,11 @@ require('miniharp').setup({
     autoload = true,
     autosave = true,
     show_on_autoload = false,
+    ui = {
+      position = 'center', -- `top-left`, `top-right`, `bottom-left`, `bottom-right`.
+      show_hints = true,
+      enter = true, -- Whether to enter the floating window or not
+    },
   },
 }
 ```
@@ -65,7 +76,7 @@ require('miniharp').setup({
 vim.keymap.set('n', '<leader>m', require('miniharp').toggle_file, { desc = 'miniharp: toggle file mark' })
 vim.keymap.set('n', '<C-n>',     require('miniharp').next,        { desc = 'miniharp: next file mark' })
 vim.keymap.set('n', '<C-p>',     require('miniharp').prev,        { desc = 'miniharp: prev file mark' })
-vim.keymap.set('n', '<leader>l', require('miniharp').show_list,   { desc = 'miniharp: list marks' })
+vim.keymap.set('n', '<leader>l', require('miniharp').show_list,   { desc = 'miniharp: toggle marks list' })
 ```
 
 Typical flow:
@@ -74,7 +85,7 @@ Typical flow:
 2. Work as usual. When you leave that file, its last cursor spot is auto-saved.
 3. From anywhere, use `<C-n>` / `<C-p>` to jump around marked files.
 4. On a new Neovim session in the **same cwd**, marks auto-load (if `autoload = true`).  
-   Show the list on demand with `<leader>l`, or enable `show_on_autoload = true` to open it automatically after restore.
+   Toggle the list on demand with `<leader>l`, or enable `show_on_autoload = true` to open it automatically after restore.
 
 ## API
 
@@ -87,6 +98,12 @@ All functions are exposed from `require('miniharp')`:
   ---@field autoload? boolean          @Load saved marks for this cwd on startup (default: true)
   ---@field autosave? boolean          @Save marks for this cwd on exit (default: true)
   ---@field show_on_autoload? boolean  @Show the marks list UI after a successful autoload (default: false)
+  ---@field ui? MiniharpUIOpts         @Floating list UI options
+
+  ---@class MiniharpUIOpts
+  ---@field position? string           @'center', 'top-left', 'top-right', 'bottom-left', or 'bottom-right' (default: 'center')
+  ---@field show_hints? boolean        @Show close hints in the floating list (default: true)
+  ---@field enter? boolean             @Enter the floating list window when opening it (default: true)
   ```
 
 - `toggle_file()` – Toggle a file mark for the **current** file.
@@ -94,7 +111,7 @@ All functions are exposed from `require('miniharp')`:
 - `next()` / `prev()` – Jump to next/previous file mark (wraps).
 - `list()` – Returns a deep copy of the marks table: `{ { file, lnum, col }, ... }`.
 - `clear()` – Remove all marks.
-- `show_list()` – Open the floating list UI (`q`, `<Esc>`, or `<C-c>` to close).
+- `show_list()` – Toggle the floating list UI. If `ui.enter = true`, you can close it with `q`, `<Esc>`, or `<C-c>`. In all cases, calling `show_list()` again closes it.
 - `save()` – Manually persist marks for the current cwd.
 - `restore()` – Manually restore marks for the current cwd (if present).
 
@@ -102,4 +119,5 @@ All functions are exposed from `require('miniharp')`:
 
 - **Minimalism first.** Small surface area and simple behavior; no dependencies.
 - **Per-cwd persistence.** Keeps things project-scoped. Disable by setting `autoload = false` and/or `autosave = false`.
-- **UI stays out of the way.** The popup is read-only, centered, and optimized for a tiny loop of files; auto-show is opt-in.
+- **UI stays out of the way.** The popup is read-only, optimized for a tiny loop of files, and configurable enough to match different workflows; auto-show is opt-in.
+- **Single-key toggle flow.** With `ui.enter = false`, the list behaves like a glanceable overlay that can be shown and dismissed with the same mapping.
