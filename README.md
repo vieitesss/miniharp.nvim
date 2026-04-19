@@ -4,6 +4,10 @@
 
 Inspired by (and giving full credit to) **Harpoon** by [ThePrimeagen](https://github.com/ThePrimeagen/). If you want a richer feature set (lists, terminals, advanced UI), check out [Harpoon2](https://github.com/ThePrimeagen/harpoon/tree/harpoon2).
 
+<p align="center">
+  <img src="assets/example.png" alt="miniharp example" />
+</p>
+
 ## Features
 
 - **File marks**.
