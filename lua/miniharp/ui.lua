@@ -377,39 +377,24 @@ function M.open(opts)
     wo.relativenumber = false
     wo.signcolumn = 'no'
 
-    vim.keymap.set(
-        'n',
-        'q',
-        close,
-        {
-            buffer = buf,
-            silent = true,
-            nowait = true,
-            desc = 'miniharp: close list',
-        }
-    )
-    vim.keymap.set(
-        'n',
-        '<Esc>',
-        close,
-        {
-            buffer = buf,
-            silent = true,
-            nowait = true,
-            desc = 'miniharp: close list',
-        }
-    )
-    vim.keymap.set(
-        'n',
-        '<C-c>',
-        close,
-        {
-            buffer = buf,
-            silent = true,
-            nowait = true,
-            desc = 'miniharp: close list',
-        }
-    )
+    vim.keymap.set('n', 'q', close, {
+        buffer = buf,
+        silent = true,
+        nowait = true,
+        desc = 'miniharp: close list',
+    })
+    vim.keymap.set('n', '<Esc>', close, {
+        buffer = buf,
+        silent = true,
+        nowait = true,
+        desc = 'miniharp: close list',
+    })
+    vim.keymap.set('n', '<C-c>', close, {
+        buffer = buf,
+        silent = true,
+        nowait = true,
+        desc = 'miniharp: close list',
+    })
 
     render()
 end
