@@ -169,19 +169,24 @@ function M.go_to(i)
         return
     end
 
-    local ok, reason = marks.jump_to(i)
-    if ok then
-        echo_status(('miniharp %d/%d'):format(i, #state.marks))
-        ui.refresh()
-        return
+    local target = i
+    while #state.marks > 0 do
+        local ok, reason = marks.jump_to(target)
+        if ok then
+            echo_status(('miniharp %d/%d'):format(target, #state.marks))
+            ui.refresh()
+            return
+        end
+
+        if reason ~= 'missing-file' then
+            return
+        end
+
+        target = math.min(target, #state.marks)
     end
 
-    if reason == 'missing-file' then
-        if #state.marks == 0 then
-            vim.notify('miniharp: no file marks yet', vim.log.levels.WARN)
-        end
-        ui.refresh()
-    end
+    vim.notify('miniharp: no file marks yet', vim.log.levels.WARN)
+    ui.refresh()
 end
 
 ---@return MiniharpMark[]
