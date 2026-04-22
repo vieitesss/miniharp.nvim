@@ -1,6 +1,7 @@
 ---@class MiniharpUI
 local M = {}
 
+local marks = require('miniharp.marks')
 local state = require('miniharp.state')
 local utils = require('miniharp.utils')
 
@@ -19,6 +20,7 @@ local valid_positions = {
     ['bottom-left'] = true,
     ['bottom-right'] = true,
 }
+local render, close
 
 local function has_win(id)
     return id and vim.api.nvim_win_is_valid(id)
@@ -71,6 +73,7 @@ local function build_lines(opts)
         rows = {},
         current_idx = nil,
         close_line = nil,
+        swap_from = state.ui_swap_from,
     }
 
     if has_win(state.ui_origin_win) then
@@ -106,6 +109,7 @@ local function build_lines(opts)
             local prefix = string.format('%s %d. ', marker, i)
             local row = prefix .. name
             local row_meta = {
+                index = i,
                 line = #lines + 1,
                 marker_start = 0,
                 marker_end = 1,
@@ -128,7 +132,7 @@ local function build_lines(opts)
 
         if config.show_hints then
             lines[#lines + 1] = ''
-            lines[#lines + 1] = ' Close: [q] [esc] [ctrl-c]'
+            lines[#lines + 1] = ' Keys: [enter] [dd] [tab] [q] [esc] [ctrl-c]'
             meta.close_line = #lines
         end
     end
@@ -142,6 +146,11 @@ local function add_token_highlight(line, token, start_col)
         return
     end
     return col - 1, col - 1 + #token
+end
+
+---@param msg string
+local function echo_status(msg)
+    vim.api.nvim_echo({ { msg, 'ModeMsg' } }, false, {})
 end
 
 local function apply_highlights(lines, meta)
@@ -210,6 +219,17 @@ local function apply_highlights(lines, meta)
                 row.name_end
             )
         end
+
+        if meta.swap_from == i then
+            vim.api.nvim_buf_add_highlight(
+                buf,
+                ns,
+                'IncSearch',
+                row.line - 1,
+                row.number_start,
+                row.name_end
+            )
+        end
     end
 
     if meta.close_line then
@@ -223,7 +243,14 @@ local function apply_highlights(lines, meta)
             7
         )
 
-        for _, token in ipairs({ '[q]', '[esc]', '[ctrl-c]' }) do
+        for _, token in ipairs({
+            '[enter]',
+            '[dd]',
+            '[tab]',
+            '[q]',
+            '[esc]',
+            '[ctrl-c]',
+        }) do
             local start_col, end_col = add_token_highlight(line, token)
             if start_col and end_col then
                 vim.api.nvim_buf_add_highlight(
@@ -236,6 +263,113 @@ local function apply_highlights(lines, meta)
                 )
             end
         end
+    end
+end
+
+---@return integer|nil
+local function cursor_mark_index()
+    if not has_win(win) then
+        return
+    end
+
+    local line = vim.api.nvim_win_get_cursor(win)[1]
+    local _, meta = build_lines(last_opts)
+    for _, row in ipairs(meta.rows) do
+        if row.line == line then
+            return row.index
+        end
+    end
+end
+
+---@param line integer
+local function restore_cursor(line)
+    if not has_win(win) then
+        return
+    end
+
+    local maxline = vim.api.nvim_buf_line_count(buf)
+    pcall(vim.api.nvim_win_set_cursor, win, { math.min(line, maxline), 0 })
+end
+
+local function clear_pending_swap()
+    if not state.ui_swap_from then
+        return
+    end
+
+    state.ui_swap_from = nil
+    render()
+end
+
+local function jump_to_cursor_mark()
+    local index = cursor_mark_index()
+    if not index then
+        return
+    end
+
+    state.ui_swap_from = nil
+    local ok = marks.jump_to(index)
+    if not ok then
+        render()
+        return
+    end
+
+    echo_status(('miniharp %d/%d'):format(index, #state.marks))
+    if ok then
+        close()
+    end
+end
+
+local function remove_cursor_mark()
+    local index = cursor_mark_index()
+    if not index then
+        return
+    end
+
+    local line = vim.api.nvim_win_get_cursor(win)[1]
+    if state.ui_swap_from == index then
+        state.ui_swap_from = nil
+    elseif state.ui_swap_from and state.ui_swap_from > index then
+        state.ui_swap_from = state.ui_swap_from - 1
+    end
+
+    local ok, mark = marks.remove_at(index)
+    if ok and mark then
+        echo_status(
+            ('miniharp removed %d/%d %s'):format(
+                math.max(state.idx, 0),
+                #state.marks,
+                utils.pretty(mark.file)
+            )
+        )
+        render()
+        restore_cursor(line)
+    end
+end
+
+local function toggle_swap_mark()
+    local index = cursor_mark_index()
+    if not index then
+        return
+    end
+
+    if state.ui_swap_from == index then
+        clear_pending_swap()
+        return
+    end
+
+    if not state.ui_swap_from then
+        state.ui_swap_from = index
+        render()
+        restore_cursor(vim.api.nvim_win_get_cursor(win)[1])
+        return
+    end
+
+    local other = state.ui_swap_from
+    state.ui_swap_from = nil
+    if marks.swap(other, index) then
+        echo_status(('miniharp swapped %d <-> %d'):format(other, index))
+        render()
+        restore_cursor(vim.api.nvim_win_get_cursor(win)[1])
     end
 end
 
@@ -265,7 +399,7 @@ local function position_window(lines)
     return width, height, row, col
 end
 
-local function render()
+render = function()
     if not has_buf(buf) then
         return
     end
@@ -288,11 +422,12 @@ local function render()
     end
 end
 
-local function close()
+close = function()
     local origin = state.ui_origin_win
 
     state.ui_win = nil
     state.ui_origin_win = nil
+    state.ui_swap_from = nil
 
     if has_win(win) then
         pcall(vim.api.nvim_win_close, win, true)
@@ -417,6 +552,24 @@ function M.open(opts)
         silent = true,
         nowait = true,
         desc = 'miniharp: close list',
+    })
+    vim.keymap.set('n', '<CR>', jump_to_cursor_mark, {
+        buffer = buf,
+        silent = true,
+        nowait = true,
+        desc = 'miniharp: jump to mark under cursor',
+    })
+    vim.keymap.set('n', 'dd', remove_cursor_mark, {
+        buffer = buf,
+        silent = true,
+        nowait = true,
+        desc = 'miniharp: remove mark under cursor',
+    })
+    vim.keymap.set('n', '<Tab>', toggle_swap_mark, {
+        buffer = buf,
+        silent = true,
+        nowait = true,
+        desc = 'miniharp: select or swap mark',
     })
 
     render()
