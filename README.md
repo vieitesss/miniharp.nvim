@@ -20,6 +20,7 @@ Inspired by (and giving full credit to) **Harpoon** by [ThePrimeagen](https://gi
   - Can open centered or in any editor corner.
   - Can open focused or leave you in the current window.
   - Optional close hints; closes with `q`, `<Esc>`, `<C-c>`, or by calling `show_list()` again.
+  - Can also be explicitly entered/focused with `enter_list()` without toggling it closed first.
   - Optional auto-show after autoload via `show_on_autoload` (default: **off**).
 - **Quieter default flow**:
   - No info notification when a cwd has no saved session yet.
@@ -81,6 +82,7 @@ vim.keymap.set('n', '<leader>m', require('miniharp').toggle_file, { desc = 'mini
 vim.keymap.set('n', '<C-n>',     require('miniharp').next,        { desc = 'miniharp: next file mark' })
 vim.keymap.set('n', '<C-p>',     require('miniharp').prev,        { desc = 'miniharp: prev file mark' })
 vim.keymap.set('n', '<leader>l', require('miniharp').show_list,   { desc = 'miniharp: toggle marks list' })
+vim.keymap.set('n', '<leader>L', require('miniharp').enter_list,  { desc = 'miniharp: enter marks list' })
 ```
 
 Typical flow:
@@ -116,6 +118,7 @@ All functions are exposed from `require('miniharp')`:
 - `list()` – Returns a deep copy of the marks table: `{ { file, lnum, col }, ... }`.
 - `clear()` – Remove all marks.
 - `show_list()` – Toggle the floating list UI. If `ui.enter = true`, you can close it with `q`, `<Esc>`, or `<C-c>`. In all cases, calling `show_list()` again closes it.
+- `enter_list()` – Open the floating list and enter it. If the list is already open, focus the existing list window instead of closing and reopening it.
 - `save()` – Manually persist marks for the current cwd.
 - `restore()` – Manually restore marks for the current cwd (if present).
 

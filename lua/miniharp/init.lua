@@ -107,6 +107,11 @@ function M.show_list()
     ui.open({})
 end
 
+---Open the floating list and enter it. If already open, focus the existing window.
+function M.enter_list()
+    ui.enter()
+end
+
 ---Persist current state for the working directory.
 function M.save()
     local ok, err = storage.save()

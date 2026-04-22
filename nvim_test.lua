@@ -43,6 +43,12 @@ vim.keymap.set(
 )
 vim.keymap.set(
     'n',
+    '<leader>L',
+    miniharp.enter_list,
+    { desc = 'miniharp: enter marks list' }
+)
+vim.keymap.set(
+    'n',
     '<leader>ms',
     miniharp.save,
     { desc = 'miniharp: save marks' }
