@@ -281,14 +281,14 @@ local function cursor_mark_index()
     end
 end
 
----@param line integer
-local function restore_cursor(line)
+---@param cursor integer[]
+local function restore_cursor(cursor)
     if not has_win(win) then
         return
     end
 
     local maxline = vim.api.nvim_buf_line_count(buf)
-    pcall(vim.api.nvim_win_set_cursor, win, { math.min(line, maxline), 0 })
+    pcall(vim.api.nvim_win_set_cursor, win, { math.min(cursor[1], maxline), cursor[2] })
 end
 
 local function clear_pending_swap()
@@ -325,7 +325,7 @@ local function remove_cursor_mark()
         return
     end
 
-    local line = vim.api.nvim_win_get_cursor(win)[1]
+    local cursor = vim.api.nvim_win_get_cursor(win)
     if state.ui_swap_from == index then
         state.ui_swap_from = nil
     elseif state.ui_swap_from and state.ui_swap_from > index then
@@ -342,7 +342,7 @@ local function remove_cursor_mark()
             )
         )
         render()
-        restore_cursor(line)
+        restore_cursor(cursor)
     end
 end
 
@@ -358,18 +358,20 @@ local function toggle_swap_mark()
     end
 
     if not state.ui_swap_from then
+        local cursor = vim.api.nvim_win_get_cursor(win)
         state.ui_swap_from = index
         render()
-        restore_cursor(vim.api.nvim_win_get_cursor(win)[1])
+        restore_cursor(cursor)
         return
     end
 
     local other = state.ui_swap_from
+    local cursor = vim.api.nvim_win_get_cursor(win)
     state.ui_swap_from = nil
     if marks.swap(other, index) then
         echo_status(('miniharp swapped %d <-> %d'):format(other, index))
         render()
-        restore_cursor(vim.api.nvim_win_get_cursor(win)[1])
+        restore_cursor(cursor)
     end
 end
 
