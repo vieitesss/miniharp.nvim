@@ -1,89 +1,20 @@
 local state = require('miniharp.state')
 local ui = require('miniharp.ui')
 local utils = require('miniharp.utils')
+local marks = require('miniharp.marks')
 
 ---@class MiniharpMarks
 local M = {}
-
-local uv = vim.uv or vim.loop
 
 ---@param msg string
 local function echo_status(msg)
     vim.api.nvim_echo({ { msg, 'ModeMsg' } }, false, {})
 end
 
----@param file string
----@return integer|nil, MiniharpMark|nil
-local function find_mark(file)
-    for i, m in ipairs(state.marks) do
-        if m.file == file then
-            return i, m
-        end
-    end
-end
-
 ---@param entry MiniharpMark
 local function add_mark(entry)
     table.insert(state.marks, entry)
     state.idx = #state.marks
-end
-
----@param i integer
----@return boolean, string?
-local function jump_to(i)
-    local m = state.marks[i]
-    if not m then
-        vim.notify('miniharp: no mark #' .. tostring(i), vim.log.levels.WARN)
-        return false, 'missing-mark'
-    end
-
-    if not uv.fs_stat(m.file) then
-        table.remove(state.marks, i)
-
-        if state.idx >= i then
-            state.idx = math.max(0, state.idx - 1)
-        end
-
-        vim.notify(
-            ('miniharp: removed missing mark %s'):format(utils.pretty(m.file)),
-            vim.log.levels.WARN
-        )
-        return false, 'missing-file'
-    end
-
-    state.idx = i
-
-    local target_win = vim.api.nvim_get_current_win()
-    if
-        state.ui_win
-        and vim.api.nvim_win_is_valid(state.ui_win)
-        and target_win == state.ui_win
-    then
-        if
-            state.ui_origin_win
-            and vim.api.nvim_win_is_valid(state.ui_origin_win)
-        then
-            target_win = state.ui_origin_win
-        end
-    end
-
-    vim.api.nvim_win_call(target_win, function()
-        if utils.bufname() ~= m.file then
-            vim.cmd('edit ' .. vim.fn.fnameescape(m.file))
-        end
-
-        local maxline = vim.api.nvim_buf_line_count(0)
-        local l = math.min(m.lnum, maxline)
-        pcall(vim.api.nvim_win_set_cursor, 0, { l, m.col })
-    end)
-
-    vim.api.nvim_echo(
-        { { ('miniharp %d/%d'):format(i, #state.marks), 'ModeMsg' } },
-        false,
-        {}
-    )
-    ui.refresh()
-    return true
 end
 
 ---@param step integer
@@ -107,8 +38,14 @@ local function cycle(step)
             i = #state.marks
         end
 
-        local ok, reason = jump_to(i)
+        local ok, reason = marks.jump_to(i)
         if ok then
+            vim.api.nvim_echo(
+                { { ('miniharp %d/%d'):format(i, #state.marks), 'ModeMsg' } },
+                false,
+                {}
+            )
+            ui.refresh()
             return
         end
         if reason ~= 'missing-file' then
@@ -143,7 +80,7 @@ function M.add_file()
         return
     end
 
-    local i = find_mark(file)
+    local i = marks.find(file)
     local l, c = utils.cursor()
 
     if i then
@@ -173,14 +110,10 @@ end
 ---Toggle a file mark for current buffer.
 function M.toggle_file()
     local file = utils.bufname()
-    local i = find_mark(file)
+    local i = marks.find(file)
 
     if i then
-        table.remove(state.marks, i)
-
-        if state.idx > #state.marks then
-            state.idx = #state.marks
-        end
+        marks.remove_at(i)
         echo_status(
             ('miniharp removed %d/%d %s'):format(
                 math.max(state.idx, 0),
@@ -201,7 +134,7 @@ end
 ---@param l integer
 ---@param c integer
 function M.update_last_for_file(file, l, c)
-    local i, m = find_mark(file)
+    local i, m = marks.find(file)
     if i then
         m.lnum, m.col = l, c
     end
@@ -223,6 +156,7 @@ end
 function M.clear()
     state.marks = {}
     state.idx = 0
+    state.ui_swap_from = nil
     ui.refresh()
 end
 
