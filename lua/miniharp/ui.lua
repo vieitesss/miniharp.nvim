@@ -328,6 +328,23 @@ function M.refresh()
     render()
 end
 
+local function focus_window()
+    if not has_win(win) then
+        return false
+    end
+
+    local current = vim.api.nvim_get_current_win()
+    if current ~= win and has_win(current) then
+        state.ui_origin_win = current
+    end
+
+    if current ~= win then
+        pcall(vim.api.nvim_set_current_win, win)
+    end
+
+    return true
+end
+
 ---@param opts? { position?: string, show_hints?: boolean, enter?: boolean }
 function M.configure(opts)
     opts = opts or {}
@@ -339,13 +356,15 @@ function M.configure(opts)
     }
 end
 
----@param opts? { msg?: string }
+---@param opts? { msg?: string, enter?: boolean }
 function M.open(opts)
+    opts = opts or {}
+
     if has_win(win) then
         close()
     end
 
-    last_opts = opts or {}
+    last_opts = { msg = opts.msg }
     state.ui_origin_win = vim.api.nvim_get_current_win()
 
     buf = vim.api.nvim_create_buf(false, true)
@@ -356,8 +375,12 @@ function M.open(opts)
 
     local lines = build_lines(last_opts)
     local width, height, row, col = position_window(lines)
+    local enter = opts.enter
+    if enter == nil then
+        enter = config.enter
+    end
 
-    win = vim.api.nvim_open_win(buf, config.enter, {
+    win = vim.api.nvim_open_win(buf, enter, {
         relative = 'editor',
         row = row,
         col = col,
@@ -397,6 +420,15 @@ function M.open(opts)
     })
 
     render()
+end
+
+function M.enter()
+    if M.is_open() then
+        focus_window()
+        return
+    end
+
+    M.open({ enter = true })
 end
 
 return M
