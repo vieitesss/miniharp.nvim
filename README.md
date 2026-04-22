@@ -21,6 +21,7 @@ Inspired by (and giving full credit to) **Harpoon** by [ThePrimeagen](https://gi
   - Can open focused or leave you in the current window.
   - Optional close hints; closes with `q`, `<Esc>`, `<C-c>`, or by calling `show_list()` again.
   - Can also be explicitly entered/focused with `enter_list()` without toggling it closed first.
+  - When focused, supports `<CR>` to jump, `dd` to remove, and `<Tab>` to select/swap mark positions.
   - Optional auto-show after autoload via `show_on_autoload` (default: **off**).
 - **Quieter default flow**:
   - No info notification when a cwd has no saved session yet.
@@ -118,7 +119,7 @@ All functions are exposed from `require('miniharp')`:
 - `list()` – Returns a deep copy of the marks table: `{ { file, lnum, col }, ... }`.
 - `clear()` – Remove all marks.
 - `show_list()` – Toggle the floating list UI. If `ui.enter = true`, you can close it with `q`, `<Esc>`, or `<C-c>`. In all cases, calling `show_list()` again closes it.
-- `enter_list()` – Open the floating list and enter it. If the list is already open, focus the existing list window instead of closing and reopening it.
+- `enter_list()` – Open the floating list and enter it. If the list is already open, focus the existing list window instead of closing and reopening it. Inside the focused list, use `<CR>` to jump to the cursor line, `dd` to remove a mark, and `<Tab>` twice to swap two mark positions.
 - `save()` – Manually persist marks for the current cwd.
 - `restore()` – Manually restore marks for the current cwd (if present).
 
@@ -126,5 +127,5 @@ All functions are exposed from `require('miniharp')`:
 
 - **Minimalism first.** Small surface area and simple behavior; no dependencies.
 - **Per-cwd persistence.** Keeps things project-scoped. Disable by setting `autoload = false` and/or `autosave = false`.
-- **UI stays out of the way.** The popup is read-only, optimized for a tiny loop of files, and configurable enough to match different workflows; auto-show is opt-in.
+- **UI stays out of the way.** The popup stays lightweight, optimized for a tiny loop of files, and configurable enough to match different workflows; auto-show is opt-in.
 - **Single-key toggle flow.** With `ui.enter = false`, the list behaves like a glanceable overlay that can be shown and dismissed with the same mapping.
