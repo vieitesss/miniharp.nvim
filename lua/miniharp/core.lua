@@ -11,6 +11,12 @@ local function echo_status(msg)
     vim.api.nvim_echo({ { msg, 'ModeMsg' } }, false, {})
 end
 
+---@param i any
+---@return boolean
+local function is_positive_integer(i)
+    return type(i) == 'number' and i == i and i >= 1 and i % 1 == 0
+end
+
 ---@param entry MiniharpMark
 local function add_mark(entry)
     table.insert(state.marks, entry)
@@ -146,6 +152,36 @@ end
 
 function M.prev()
     cycle(-1)
+end
+
+---@param i integer
+function M.go_to(i)
+    if #state.marks == 0 then
+        vim.notify('miniharp: no file marks yet', vim.log.levels.WARN)
+        return
+    end
+
+    if not is_positive_integer(i) then
+        vim.notify(
+            'miniharp: mark position must be a positive integer',
+            vim.log.levels.WARN
+        )
+        return
+    end
+
+    local ok, reason = marks.jump_to(i)
+    if ok then
+        echo_status(('miniharp %d/%d'):format(i, #state.marks))
+        ui.refresh()
+        return
+    end
+
+    if reason == 'missing-file' then
+        if #state.marks == 0 then
+            vim.notify('miniharp: no file marks yet', vim.log.levels.WARN)
+        end
+        ui.refresh()
+    end
 end
 
 ---@return MiniharpMark[]
