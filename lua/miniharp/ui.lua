@@ -381,7 +381,7 @@ local function toggle_swap_mark()
 end
 
 local function position_window(lines)
-    local width = 0
+    local width = vim.fn.strdisplaywidth(window_title)
     for _, line in ipairs(lines) do
         width = math.max(width, vim.fn.strdisplaywidth(line))
     end
