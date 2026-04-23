@@ -8,6 +8,7 @@ local utils = require('miniharp.utils')
 local ns = vim.api.nvim_create_namespace('MiniharpUI')
 local win, buf
 local last_opts = {}
+local window_title = 'MiniHarp'
 local config = {
     position = 'center',
     show_hints = true,
@@ -64,12 +65,11 @@ end
 ---@return string[], table
 local function build_lines(opts)
     opts = opts or {}
-    local lines = { 'Miniharp marks' }
-    local row_offset = #lines
+    local lines = {}
     local current_file = ''
     local current_idx
     local meta = {
-        row_offset = row_offset,
+        row_offset = 0,
         rows = {},
         current_idx = nil,
         close_line = nil,
@@ -94,8 +94,7 @@ local function build_lines(opts)
 
     if opts.msg and opts.msg ~= '' then
         lines[#lines + 1] = ' ' .. opts.msg
-        row_offset = #lines
-        meta.row_offset = row_offset
+        meta.row_offset = #lines
     end
 
     if #state.marks == 0 then
@@ -155,10 +154,16 @@ end
 
 local function apply_highlights(lines, meta)
     vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
-    vim.api.nvim_buf_add_highlight(buf, ns, 'Title', 0, 0, -1)
 
-    if meta.row_offset > 1 then
-        vim.api.nvim_buf_add_highlight(buf, ns, 'Comment', 1, 0, -1)
+    if meta.row_offset > 0 then
+        vim.api.nvim_buf_add_highlight(
+            buf,
+            ns,
+            'Comment',
+            meta.row_offset - 1,
+            0,
+            -1
+        )
     end
 
     if #state.marks == 0 then
@@ -525,6 +530,8 @@ function M.open(opts)
         height = height,
         style = 'minimal',
         border = 'rounded',
+        title = window_title,
+        title_pos = 'center',
         noautocmd = true,
     })
 
