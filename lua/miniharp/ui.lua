@@ -22,6 +22,11 @@ local valid_positions = {
 }
 local render, close
 
+local function render_visible_update()
+    last_opts.msg = nil
+    render()
+end
+
 local function has_win(id)
     return id and vim.api.nvim_win_is_valid(id)
 end
@@ -297,7 +302,7 @@ local function clear_pending_swap()
     end
 
     state.ui_swap_from = nil
-    render()
+    render_visible_update()
 end
 
 local function jump_to_cursor_mark()
@@ -309,7 +314,7 @@ local function jump_to_cursor_mark()
     state.ui_swap_from = nil
     local ok = marks.jump_to(index)
     if not ok then
-        render()
+        render_visible_update()
         return
     end
 
@@ -341,7 +346,7 @@ local function remove_cursor_mark()
                 utils.pretty(mark.file)
             )
         )
-        render()
+        render_visible_update()
         restore_cursor(cursor)
     end
 end
@@ -360,7 +365,7 @@ local function toggle_swap_mark()
     if not state.ui_swap_from then
         local cursor = vim.api.nvim_win_get_cursor(win)
         state.ui_swap_from = index
-        render()
+        render_visible_update()
         restore_cursor(cursor)
         return
     end
@@ -370,7 +375,7 @@ local function toggle_swap_mark()
     state.ui_swap_from = nil
     if marks.swap(other, index) then
         echo_status(('miniharp swapped %d <-> %d'):format(other, index))
-        render()
+        render_visible_update()
         restore_cursor(cursor)
     end
 end
@@ -462,7 +467,7 @@ function M.refresh()
     if not has_win(win) or not has_buf(buf) then
         return
     end
-    render()
+    render_visible_update()
 end
 
 local function focus_window()
