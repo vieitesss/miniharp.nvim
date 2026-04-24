@@ -2,6 +2,7 @@ local state = require('miniharp.state')
 local ui = require('miniharp.ui')
 local utils = require('miniharp.utils')
 local marks = require('miniharp.marks')
+local notifier = require('miniharp.notify')
 
 ---@class MiniharpMarks
 local M = {}
@@ -26,7 +27,7 @@ end
 ---@param step integer
 local function cycle(step)
     if #state.marks == 0 then
-        return vim.notify('miniharp: no file marks yet', vim.log.levels.WARN)
+        return notifier.notify('miniharp: no file marks yet', vim.log.levels.WARN)
     end
 
     local cursor = state.idx
@@ -46,7 +47,7 @@ local function cycle(step)
 
         local ok, reason = marks.jump_to(i)
         if ok then
-            vim.api.nvim_echo(
+            notifier.echo(
                 { { ('miniharp %d/%d'):format(i, #state.marks), 'ModeMsg' } },
                 false,
                 {}
@@ -67,7 +68,7 @@ local function cycle(step)
     end
 
     if #state.marks == 0 then
-        vim.notify('miniharp: no file marks yet', vim.log.levels.WARN)
+        notifier.notify('miniharp: no file marks yet', vim.log.levels.WARN)
     end
 
     ui.refresh()
@@ -79,7 +80,7 @@ end
 function M.add_file()
     local file = utils.bufname()
     if file == '' then
-        vim.notify(
+        notifier.notify(
             'miniharp: cannot mark an unnamed buffer',
             vim.log.levels.WARN
         )
@@ -157,12 +158,12 @@ end
 ---@param i integer
 function M.go_to(i)
     if #state.marks == 0 then
-        vim.notify('miniharp: no file marks yet', vim.log.levels.WARN)
+        notifier.notify('miniharp: no file marks yet', vim.log.levels.WARN)
         return
     end
 
     if not is_positive_integer(i) then
-        vim.notify(
+        notifier.notify(
             'miniharp: mark position must be a positive integer',
             vim.log.levels.WARN
         )
@@ -185,7 +186,7 @@ function M.go_to(i)
         target = math.min(target, #state.marks)
     end
 
-    vim.notify('miniharp: no file marks yet', vim.log.levels.WARN)
+    notifier.notify('miniharp: no file marks yet', vim.log.levels.WARN)
     ui.refresh()
 end
 

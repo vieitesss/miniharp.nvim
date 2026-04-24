@@ -1,5 +1,6 @@
 local state = require('miniharp.state')
 local utils = require('miniharp.utils')
+local notifier = require('miniharp.notify')
 
 local uv = vim.uv or vim.loop
 
@@ -58,13 +59,13 @@ end
 function M.jump_to(i)
     local mark = state.marks[i]
     if not mark then
-        vim.notify('miniharp: no mark #' .. tostring(i), vim.log.levels.WARN)
+        notifier.notify('miniharp: no mark #' .. tostring(i), vim.log.levels.WARN)
         return false, 'missing-mark'
     end
 
     if not uv.fs_stat(mark.file) then
         M.remove_at(i)
-        vim.notify(
+        notifier.notify(
             ('miniharp: removed missing mark %s'):format(utils.pretty(mark.file)),
             vim.log.levels.WARN
         )
