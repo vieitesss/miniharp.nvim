@@ -7,6 +7,12 @@ local utils = require('miniharp.utils')
 
 local ns = vim.api.nvim_create_namespace('MiniharpUI')
 local win, buf
+local resize_autocmd
+local resize_pending = false
+local resize_augroup = vim.api.nvim_create_augroup(
+    'MiniharpUI',
+    { clear = true }
+)
 local last_opts = {}
 local config = {
     position = 'center',
@@ -33,6 +39,20 @@ end
 
 local function has_buf(id)
     return id and vim.api.nvim_buf_is_valid(id)
+end
+
+local function pin_window_top()
+    if not has_win(win) then
+        return
+    end
+
+    vim.api.nvim_win_call(win, function()
+        pcall(vim.fn.winrestview, {
+            topline = 1,
+            topfill = 0,
+            leftcol = 0,
+        })
+    end)
 end
 
 ---@param position? string
@@ -305,6 +325,41 @@ local function clear_pending_swap()
     render_visible_update()
 end
 
+local function schedule_resize_update()
+    if resize_pending then
+        return
+    end
+
+    resize_pending = true
+    vim.schedule(function()
+        resize_pending = false
+        if has_win(win) and has_buf(buf) then
+            render()
+        end
+    end)
+end
+
+local function ensure_resize_autocmd()
+    if resize_autocmd then
+        return
+    end
+
+    resize_autocmd = vim.api.nvim_create_autocmd('VimResized', {
+        group = resize_augroup,
+        callback = schedule_resize_update,
+        desc = 'miniharp: reposition list on resize',
+    })
+end
+
+local function clear_resize_autocmd()
+    if resize_autocmd then
+        pcall(vim.api.nvim_del_autocmd, resize_autocmd)
+    end
+
+    resize_autocmd = nil
+    resize_pending = false
+end
+
 local function jump_to_cursor_mark()
     local index = cursor_mark_index()
     if not index then
@@ -426,11 +481,14 @@ render = function()
             width = width,
             height = height,
         })
+        pin_window_top()
     end
 end
 
 close = function()
     local origin = state.ui_origin_win
+
+    clear_resize_autocmd()
 
     state.ui_win = nil
     state.ui_origin_win = nil
@@ -534,6 +592,7 @@ function M.open(opts)
     })
 
     state.ui_win = win
+    ensure_resize_autocmd()
 
     local wo = vim.wo[win]
     wo.wrap = false
@@ -541,6 +600,8 @@ function M.open(opts)
     wo.number = false
     wo.relativenumber = false
     wo.signcolumn = 'no'
+    wo.scrolloff = 0
+    wo.sidescrolloff = 0
 
     vim.keymap.set('n', 'q', close, {
         buffer = buf,
