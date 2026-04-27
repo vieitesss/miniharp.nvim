@@ -65,7 +65,9 @@ function M.jump_to(i)
     if not uv.fs_stat(mark.file) then
         M.remove_at(i)
         vim.notify(
-            ('miniharp: removed missing mark %s'):format(utils.pretty(mark.file)),
+            ('miniharp: removed missing mark %s'):format(
+                utils.pretty(mark.file)
+            ),
             vim.log.levels.WARN
         )
         return false, 'missing-file'
@@ -79,7 +81,10 @@ function M.jump_to(i)
         and vim.api.nvim_win_is_valid(state.ui_win)
         and target_win == state.ui_win
     then
-        if state.ui_origin_win and vim.api.nvim_win_is_valid(state.ui_origin_win) then
+        if
+            state.ui_origin_win
+            and vim.api.nvim_win_is_valid(state.ui_origin_win)
+        then
             target_win = state.ui_origin_win
         end
     end

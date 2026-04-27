@@ -9,10 +9,8 @@ local ns = vim.api.nvim_create_namespace('MiniharpUI')
 local win, buf
 local resize_autocmd
 local resize_pending = false
-local resize_augroup = vim.api.nvim_create_augroup(
-    'MiniharpUI',
-    { clear = true }
-)
+local resize_augroup =
+    vim.api.nvim_create_augroup('MiniharpUI', { clear = true })
 local last_opts = {}
 local config = {
     position = 'center',
@@ -313,7 +311,11 @@ local function restore_cursor(cursor)
     end
 
     local maxline = vim.api.nvim_buf_line_count(buf)
-    pcall(vim.api.nvim_win_set_cursor, win, { math.min(cursor[1], maxline), cursor[2] })
+    pcall(
+        vim.api.nvim_win_set_cursor,
+        win,
+        { math.min(cursor[1], maxline), cursor[2] }
+    )
 end
 
 local function clear_pending_swap()

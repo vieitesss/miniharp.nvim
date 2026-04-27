@@ -35,30 +35,15 @@ vim.keymap.set(
     miniharp.prev,
     { desc = 'miniharp: previous file mark' }
 )
-vim.keymap.set(
-    'n',
-    '<C-j>',
-    function()
-        miniharp.go_to(1)
-    end,
-    { desc = 'miniharp: go to file mark 1' }
-)
-vim.keymap.set(
-    'n',
-    '<C-k>',
-    function()
-        miniharp.go_to(2)
-    end,
-    { desc = 'miniharp: go to file mark 2' }
-)
-vim.keymap.set(
-    'n',
-    '<C-l>',
-    function()
-        miniharp.go_to(3)
-    end,
-    { desc = 'miniharp: go to file mark 3' }
-)
+vim.keymap.set('n', '<C-j>', function()
+    miniharp.go_to(1)
+end, { desc = 'miniharp: go to file mark 1' })
+vim.keymap.set('n', '<C-k>', function()
+    miniharp.go_to(2)
+end, { desc = 'miniharp: go to file mark 2' })
+vim.keymap.set('n', '<C-l>', function()
+    miniharp.go_to(3)
+end, { desc = 'miniharp: go to file mark 3' })
 vim.keymap.set(
     'n',
     '<leader>l',
