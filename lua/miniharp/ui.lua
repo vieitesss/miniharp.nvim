@@ -4,6 +4,7 @@ local M = {}
 local marks = require('miniharp.marks')
 local state = require('miniharp.state')
 local utils = require('miniharp.utils')
+local notifier = require('miniharp.notify')
 
 local ns = vim.api.nvim_create_namespace('MiniharpUI')
 local win, buf
@@ -65,7 +66,7 @@ local function normalize_position(position)
         return position
     end
 
-    vim.notify(
+    notifier.notify(
         ("miniharp: invalid ui.position '%s', using 'center'"):format(position),
         vim.log.levels.WARN
     )
@@ -173,7 +174,7 @@ end
 
 ---@param msg string
 local function echo_status(msg)
-    vim.api.nvim_echo({ { msg, 'ModeMsg' } }, false, {})
+    notifier.echo({ { msg, 'ModeMsg' } }, false, {})
 end
 
 local function apply_highlights(lines, meta)

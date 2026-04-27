@@ -9,6 +9,7 @@ local utils = require('miniharp.utils')
 ---@field marks MiniharpMark[]
 ---@field cwd string
 ---@field idx integer
+---@field notifications boolean
 ---@field augroup? integer
 ---@field ui_win? integer
 ---@field ui_origin_win? integer
@@ -20,6 +21,7 @@ M = {
     marks = {},
     cwd = utils.norm(vim.fn.getcwd()),
     idx = 0,
+    notifications = true,
     augroup = nil,
     ui_win = nil,
     ui_origin_win = nil,

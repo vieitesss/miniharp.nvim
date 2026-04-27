@@ -6,6 +6,7 @@ local utils = require('miniharp.utils')
 local core = require('miniharp.core')
 local storage = require('miniharp.storage')
 local ui = require('miniharp.ui')
+local notifier = require('miniharp.notify')
 
 local function is_missing_session(err)
     return err and string.find(err, 'no session file for cwd', 1, true)
@@ -61,7 +62,7 @@ local function ensure_dirchange(opts)
             if opts.autosave ~= false then
                 local ok, err = storage.save(old_cwd)
                 if not ok then
-                    vim.notify(
+                    notifier.notify(
                         ('miniharp: save failed for %s - %s'):format(
                             vim.fn.fnamemodify(old_cwd, ':~:.'),
                             err or 'unknown error'
@@ -76,7 +77,7 @@ local function ensure_dirchange(opts)
             if opts.autoload then
                 local ok, err = storage.load(new_cwd)
                 if not ok and not is_missing_session(err) then
-                    vim.notify(
+                    notifier.notify(
                         'miniharp: ' .. (err or 'unknown error'),
                         vim.log.levels.WARN
                     )
@@ -116,7 +117,7 @@ end
 function M.save()
     local ok, err = storage.save()
     if not ok then
-        vim.notify(
+        notifier.notify(
             'miniharp: ' .. (err or 'unknown error'),
             vim.log.levels.ERROR
         )
@@ -129,7 +130,7 @@ function M.restore()
     if not ok then
         local level = is_missing_session(err) and vim.log.levels.INFO
             or vim.log.levels.ERROR
-        vim.notify('miniharp: ' .. (err or 'unknown error'), level)
+        notifier.notify('miniharp: ' .. (err or 'unknown error'), level)
     end
 end
 
@@ -137,6 +138,7 @@ end
 ---@field autoload? boolean  @Load saved marks for this cwd on startup (default: true)
 ---@field autosave? boolean  @Save marks for this cwd on exit (default: true)
 ---@field show_on_autoload? boolean  @Show the marks list UI after a successful autoload (default: false)
+---@field notifications? boolean  @Enable notification and status messages (default: true)
 ---@field ui? MiniharpUIOpts  @Floating list UI options
 
 ---@class MiniharpUIOpts
@@ -148,6 +150,7 @@ end
 ---@param opts? MiniharpOpts
 function M.setup(opts)
     opts = opts or {}
+    state.notifications = opts.notifications ~= false
     ui.configure(opts.ui)
 
     ensure_autosave_positions()
@@ -160,7 +163,7 @@ function M.setup(opts)
         local ok, err = storage.load()
         if not ok then
             if not is_missing_session(err) then
-                vim.notify(
+                notifier.notify(
                     'miniharp: ' .. (err or 'unknown error'),
                     vim.log.levels.WARN
                 )
