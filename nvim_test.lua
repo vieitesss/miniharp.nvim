@@ -8,6 +8,7 @@ require('miniharp').setup({
     autoload = true,
     autosave = true,
     show_on_autoload = true,
+    notifications = false,
     ui = {
         position = 'top-right',
         show_hints = false,
