@@ -10,7 +10,7 @@ function M.notify(msg, level, opts)
         return
     end
 
-    vim.notify(msg, level, opts)
+    return vim.notify(msg, level, opts)
 end
 
 ---@param chunks any[]
@@ -21,7 +21,7 @@ function M.echo(chunks, history, opts)
         return
     end
 
-    vim.api.nvim_echo(chunks, history, opts)
+    return vim.api.nvim_echo(chunks, history, opts)
 end
 
 return M
