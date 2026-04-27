@@ -46,6 +46,7 @@ require('miniharp').setup({
   autoload = true, -- load marks for this cwd on startup (default: true)
   autosave = true, -- save marks for this cwd on exit (default: true)
   show_on_autoload = false, -- show popup list after a successful autoload (default: false)
+  notifications = true, -- enable notification and status messages (default: true)
   ui = {
     position = 'center', -- 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
     show_hints = true, -- show close hints in the floating list (default: true)
@@ -65,6 +66,7 @@ require('miniharp').setup({
     autoload = true,
     autosave = true,
     show_on_autoload = false,
+    notifications = true,
     ui = {
       position = 'center', -- `top-left`, `top-right`, `bottom-left`, `bottom-right`.
       show_hints = true,
@@ -112,6 +114,7 @@ All functions are exposed from `require('miniharp')`:
   ---@field autoload? boolean          @Load saved marks for this cwd on startup (default: true)
   ---@field autosave? boolean          @Save marks for this cwd on exit (default: true)
   ---@field show_on_autoload? boolean  @Show the marks list UI after a successful autoload (default: false)
+  ---@field notifications? boolean      @Enable notification and status messages (default: true)
   ---@field ui? MiniharpUIOpts         @Floating list UI options
 
   ---@class MiniharpUIOpts
