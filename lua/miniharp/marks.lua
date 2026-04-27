@@ -80,7 +80,10 @@ function M.jump_to(i)
         and vim.api.nvim_win_is_valid(state.ui_win)
         and target_win == state.ui_win
     then
-        if state.ui_origin_win and vim.api.nvim_win_is_valid(state.ui_origin_win) then
+        if
+            state.ui_origin_win
+            and vim.api.nvim_win_is_valid(state.ui_origin_win)
+        then
             target_win = state.ui_origin_win
         end
     end

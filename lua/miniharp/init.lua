@@ -138,7 +138,7 @@ end
 ---@field autoload? boolean  @Load saved marks for this cwd on startup (default: true)
 ---@field autosave? boolean  @Save marks for this cwd on exit (default: true)
 ---@field show_on_autoload? boolean  @Show the marks list UI after a successful autoload (default: false)
----@field notifications? boolean  @Enable vim.notify messages (default: true)
+---@field notifications? boolean  @Enable notification and status messages (default: true)
 ---@field ui? MiniharpUIOpts  @Floating list UI options
 
 ---@class MiniharpUIOpts

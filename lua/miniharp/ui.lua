@@ -8,6 +8,10 @@ local notifier = require('miniharp.notify')
 
 local ns = vim.api.nvim_create_namespace('MiniharpUI')
 local win, buf
+local resize_autocmd
+local resize_pending = false
+local resize_augroup =
+    vim.api.nvim_create_augroup('MiniharpUI', { clear = true })
 local last_opts = {}
 local config = {
     position = 'center',
@@ -23,12 +27,31 @@ local valid_positions = {
 }
 local render, close
 
+local function render_visible_update()
+    last_opts.msg = nil
+    render()
+end
+
 local function has_win(id)
     return id and vim.api.nvim_win_is_valid(id)
 end
 
 local function has_buf(id)
     return id and vim.api.nvim_buf_is_valid(id)
+end
+
+local function pin_window_top()
+    if not has_win(win) then
+        return
+    end
+
+    vim.api.nvim_win_call(win, function()
+        pcall(vim.fn.winrestview, {
+            topline = 1,
+            topfill = 0,
+            leftcol = 0,
+        })
+    end)
 end
 
 ---@param position? string
@@ -151,7 +174,7 @@ end
 
 ---@param msg string
 local function echo_status(msg)
-    vim.api.nvim_echo({ { msg, 'ModeMsg' } }, false, {})
+    notifier.echo({ { msg, 'ModeMsg' } }, false, {})
 end
 
 local function apply_highlights(lines, meta)
@@ -289,7 +312,11 @@ local function restore_cursor(cursor)
     end
 
     local maxline = vim.api.nvim_buf_line_count(buf)
-    pcall(vim.api.nvim_win_set_cursor, win, { math.min(cursor[1], maxline), cursor[2] })
+    pcall(
+        vim.api.nvim_win_set_cursor,
+        win,
+        { math.min(cursor[1], maxline), cursor[2] }
+    )
 end
 
 local function clear_pending_swap()
@@ -298,7 +325,42 @@ local function clear_pending_swap()
     end
 
     state.ui_swap_from = nil
-    render()
+    render_visible_update()
+end
+
+local function schedule_resize_update()
+    if resize_pending then
+        return
+    end
+
+    resize_pending = true
+    vim.schedule(function()
+        resize_pending = false
+        if has_win(win) and has_buf(buf) then
+            render()
+        end
+    end)
+end
+
+local function ensure_resize_autocmd()
+    if resize_autocmd then
+        return
+    end
+
+    resize_autocmd = vim.api.nvim_create_autocmd('VimResized', {
+        group = resize_augroup,
+        callback = schedule_resize_update,
+        desc = 'miniharp: reposition list on resize',
+    })
+end
+
+local function clear_resize_autocmd()
+    if resize_autocmd then
+        pcall(vim.api.nvim_del_autocmd, resize_autocmd)
+    end
+
+    resize_autocmd = nil
+    resize_pending = false
 end
 
 local function jump_to_cursor_mark()
@@ -310,7 +372,7 @@ local function jump_to_cursor_mark()
     state.ui_swap_from = nil
     local ok = marks.jump_to(index)
     if not ok then
-        render()
+        render_visible_update()
         return
     end
 
@@ -342,7 +404,7 @@ local function remove_cursor_mark()
                 utils.pretty(mark.file)
             )
         )
-        render()
+        render_visible_update()
         restore_cursor(cursor)
     end
 end
@@ -361,7 +423,7 @@ local function toggle_swap_mark()
     if not state.ui_swap_from then
         local cursor = vim.api.nvim_win_get_cursor(win)
         state.ui_swap_from = index
-        render()
+        render_visible_update()
         restore_cursor(cursor)
         return
     end
@@ -371,7 +433,7 @@ local function toggle_swap_mark()
     state.ui_swap_from = nil
     if marks.swap(other, index) then
         echo_status(('miniharp swapped %d <-> %d'):format(other, index))
-        render()
+        render_visible_update()
         restore_cursor(cursor)
     end
 end
@@ -422,11 +484,14 @@ render = function()
             width = width,
             height = height,
         })
+        pin_window_top()
     end
 end
 
 close = function()
     local origin = state.ui_origin_win
+
+    clear_resize_autocmd()
 
     state.ui_win = nil
     state.ui_origin_win = nil
@@ -463,7 +528,7 @@ function M.refresh()
     if not has_win(win) or not has_buf(buf) then
         return
     end
-    render()
+    render_visible_update()
 end
 
 local function focus_window()
@@ -530,6 +595,7 @@ function M.open(opts)
     })
 
     state.ui_win = win
+    ensure_resize_autocmd()
 
     local wo = vim.wo[win]
     wo.wrap = false
@@ -537,6 +603,8 @@ function M.open(opts)
     wo.number = false
     wo.relativenumber = false
     wo.signcolumn = 'no'
+    wo.scrolloff = 0
+    wo.sidescrolloff = 0
 
     vim.keymap.set('n', 'q', close, {
         buffer = buf,

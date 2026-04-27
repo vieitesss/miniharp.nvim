@@ -9,7 +9,7 @@ local M = {}
 
 ---@param msg string
 local function echo_status(msg)
-    vim.api.nvim_echo({ { msg, 'ModeMsg' } }, false, {})
+    notifier.echo({ { msg, 'ModeMsg' } }, false, {})
 end
 
 ---@param i any
@@ -47,11 +47,7 @@ local function cycle(step)
 
         local ok, reason = marks.jump_to(i)
         if ok then
-            notifier.echo(
-                { { ('miniharp %d/%d'):format(i, #state.marks), 'ModeMsg' } },
-                false,
-                {}
-            )
+            echo_status(('miniharp %d/%d'):format(i, #state.marks))
             ui.refresh()
             return
         end
