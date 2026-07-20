@@ -107,14 +107,10 @@ local function build_lines(opts)
         current_file = utils.bufname()
     end
 
-    if state.idx > 0 and state.idx <= #state.marks then
-        current_idx = state.idx
-    else
-        for i, m in ipairs(state.marks) do
-            if m.file == current_file then
-                current_idx = i
-                break
-            end
+    for i, m in ipairs(state.marks) do
+        if m.file == current_file then
+            current_idx = i
+            break
         end
     end
 
@@ -403,7 +399,7 @@ local function remove_cursor_mark()
     if ok and mark then
         echo_status(
             ('miniharp removed %d/%d %s'):format(
-                math.max(state.idx, 0),
+                math.min(index, #state.marks),
                 #state.marks,
                 utils.pretty(mark.file)
             )

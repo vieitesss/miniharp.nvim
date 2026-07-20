@@ -29,7 +29,7 @@ function M.remove_at(i)
     if state.idx > i then
         state.idx = state.idx - 1
     elseif state.idx == i then
-        state.idx = math.min(i, #state.marks)
+        state.idx = 0
     end
 
     return true, mark

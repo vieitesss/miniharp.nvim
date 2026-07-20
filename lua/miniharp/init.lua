@@ -6,7 +6,10 @@ local utils = require('miniharp.utils')
 local core = require('miniharp.core')
 local storage = require('miniharp.storage')
 local ui = require('miniharp.ui')
+local marks = require('miniharp.marks')
 local notifier = require('miniharp.notify')
+
+local focus_autocmd
 
 local function is_missing_session(err)
     return err and string.find(err, 'no session file for cwd', 1, true)
@@ -18,6 +21,39 @@ local function ensure_group()
         return
     end
     state.augroup = vim.api.nvim_create_augroup('Miniharp', { clear = true })
+end
+
+local function sync_current_file()
+    local current_win = vim.api.nvim_get_current_win()
+    if current_win == state.ui_win then
+        current_win = state.ui_origin_win
+    end
+
+    if not current_win or not vim.api.nvim_win_is_valid(current_win) then
+        state.idx = 0
+        ui.refresh()
+        return
+    end
+
+    if state.ui_win then
+        state.ui_origin_win = current_win
+    end
+    local current_buf = vim.api.nvim_win_get_buf(current_win)
+    state.idx = marks.find(utils.bufname(current_buf)) or 0
+    ui.refresh()
+end
+
+local function ensure_focus_tracking()
+    if focus_autocmd then
+        return
+    end
+
+    ensure_group()
+    focus_autocmd = vim.api.nvim_create_autocmd({ 'BufEnter', 'WinEnter' }, {
+        group = state.augroup,
+        callback = sync_current_file,
+        desc = 'miniharp: track current file mark',
+    })
 end
 
 -- Track last cursor pos for marked files when leaving a buffer
@@ -84,6 +120,8 @@ local function ensure_dirchange(opts)
                 end
             end
 
+            sync_current_file()
+
             if opts.show_on_autoload and #state.marks > 0 then
                 local msg = ('Restored %d mark(s)'):format(#state.marks)
                 vim.schedule(function()
@@ -131,7 +169,10 @@ function M.restore()
         local level = is_missing_session(err) and vim.log.levels.INFO
             or vim.log.levels.ERROR
         notifier.notify('miniharp: ' .. (err or 'unknown error'), level)
+        return
     end
+
+    sync_current_file()
 end
 
 ---@class MiniharpOpts
@@ -154,6 +195,7 @@ function M.setup(opts)
     ui.configure(opts.ui)
 
     ensure_autosave_positions()
+    ensure_focus_tracking()
 
     local autoload = opts.autoload ~= false
     local autosave = opts.autosave ~= false
@@ -174,6 +216,8 @@ function M.setup(opts)
             end)
         end
     end
+
+    sync_current_file()
 
     if autosave then
         ensure_persist_autosave()

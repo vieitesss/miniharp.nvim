@@ -119,7 +119,7 @@ function M.toggle_file()
         marks.remove_at(i)
         echo_status(
             ('miniharp removed %d/%d %s'):format(
-                math.max(state.idx, 0),
+                math.min(i, #state.marks),
                 #state.marks,
                 utils.pretty(file)
             )

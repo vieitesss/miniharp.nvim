@@ -17,6 +17,7 @@ Inspired by (and giving full credit to) **Harpoon** by [ThePrimeagen](https://gi
 - **Tiny floating list UI**:
   - Shows compact file names plus parent paths.
   - Marks and highlights the **current** file in the loop.
+  - Tracks ordinary buffer and window focus changes, even outside Miniharp mappings.
   - Can open centered or in any editor corner.
   - Can open focused or leave you in the current window.
   - Optional close hints; closes with `q`, `<Esc>`, `<C-c>`, or by calling `show_list()` again.
