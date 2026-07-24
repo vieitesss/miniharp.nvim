@@ -9,6 +9,9 @@ local notifier = require('miniharp.notify')
 local ns = vim.api.nvim_create_namespace('MiniharpUI')
 local win, buf
 local resize_autocmd
+local auto_hide_autocmd
+local auto_hidden = false
+local auto_hide_tick = 0
 local resize_pending = false
 local resize_augroup =
     vim.api.nvim_create_augroup('MiniharpUI', { clear = true })
@@ -17,6 +20,7 @@ local config = {
     position = 'center',
     show_hints = true,
     enter = true,
+    auto_hide = false,
 }
 local valid_positions = {
     center = true,
@@ -25,7 +29,7 @@ local valid_positions = {
     ['bottom-left'] = true,
     ['bottom-right'] = true,
 }
-local render, close
+local render, close, check_auto_hide
 
 local function render_visible_update()
     last_opts.msg = nil
@@ -338,6 +342,7 @@ local function schedule_resize_update()
         resize_pending = false
         if has_win(win) and has_buf(buf) then
             render()
+            check_auto_hide()
         end
     end)
 end
@@ -464,6 +469,78 @@ local function position_window(lines)
     return width, height, row, col
 end
 
+local function cursor_overlaps_list()
+    local current = vim.api.nvim_get_current_win()
+    if current == win or not has_win(current) then
+        return false
+    end
+
+    local cursor = vim.api.nvim_win_get_cursor(current)
+    local pos = vim.fn.screenpos(current, cursor[1], cursor[2] + 1)
+    local origin = vim.fn.screenpos(win, 1, 1)
+    local float = vim.api.nvim_win_get_config(win)
+
+    return pos.row >= origin.row - 1
+        and pos.row <= origin.row + float.height
+        and pos.col >= origin.col - 1
+        and pos.col <= origin.col + float.width
+end
+
+local function set_auto_hidden(hidden)
+    auto_hidden = hidden
+    vim.api.nvim_win_set_config(win, { hide = hidden })
+end
+
+check_auto_hide = function()
+    if not config.auto_hide or not has_win(win) then
+        return
+    end
+
+    auto_hide_tick = auto_hide_tick + 1
+    if cursor_overlaps_list() then
+        if not auto_hidden then
+            set_auto_hidden(true)
+        end
+        return
+    end
+
+    if not auto_hidden then
+        return
+    end
+
+    local tick = auto_hide_tick
+    vim.defer_fn(function()
+        if tick == auto_hide_tick and not cursor_overlaps_list() then
+            set_auto_hidden(false)
+        end
+    end, 100)
+end
+
+local function ensure_auto_hide_autocmd()
+    if not config.auto_hide or auto_hide_autocmd then
+        return
+    end
+
+    auto_hide_autocmd = vim.api.nvim_create_autocmd(
+        { 'CursorMoved', 'CursorMovedI', 'WinEnter' },
+        {
+            group = resize_augroup,
+            callback = check_auto_hide,
+            desc = 'miniharp: hide list when it covers the cursor',
+        }
+    )
+end
+
+local function clear_auto_hide_autocmd()
+    auto_hide_tick = auto_hide_tick + 1
+    auto_hidden = false
+
+    if auto_hide_autocmd then
+        pcall(vim.api.nvim_del_autocmd, auto_hide_autocmd)
+    end
+    auto_hide_autocmd = nil
+end
+
 render = function()
     if not has_buf(buf) then
         return
@@ -492,6 +569,7 @@ close = function()
     local origin = state.ui_origin_win
 
     clear_resize_autocmd()
+    clear_auto_hide_autocmd()
 
     state.ui_win = nil
     state.ui_origin_win = nil
@@ -548,7 +626,7 @@ local function focus_window()
     return true
 end
 
----@param opts? { position?: string, show_hints?: boolean, enter?: boolean }
+---@param opts? { position?: string, show_hints?: boolean, enter?: boolean, auto_hide?: boolean }
 function M.configure(opts)
     opts = opts or {}
 
@@ -556,12 +634,15 @@ function M.configure(opts)
         position = normalize_position(opts.position),
         show_hints = opts.show_hints ~= false,
         enter = opts.enter ~= false,
+        auto_hide = opts.auto_hide == true,
     }
 end
 
 ---@param opts? { msg?: string, enter?: boolean }
 function M.open(opts)
     opts = opts or {}
+    auto_hidden = false
+    auto_hide_tick = auto_hide_tick + 1
 
     if has_win(win) then
         close()
@@ -596,6 +677,7 @@ function M.open(opts)
 
     state.ui_win = win
     ensure_resize_autocmd()
+    ensure_auto_hide_autocmd()
 
     local wo = vim.wo[win]
     wo.wrap = false
@@ -644,9 +726,14 @@ function M.open(opts)
     })
 
     render()
+    check_auto_hide()
 end
 
 function M.enter()
+    if auto_hidden then
+        set_auto_hidden(false)
+    end
+
     if M.is_open() then
         focus_window()
         return

@@ -20,6 +20,7 @@ Inspired by (and giving full credit to) **Harpoon** by [ThePrimeagen](https://gi
   - Tracks ordinary buffer and window focus changes, even outside Miniharp mappings.
   - Can open centered or in any editor corner.
   - Can open focused or leave you in the current window.
+  - Can hide temporarily when it covers the editor cursor.
   - Optional close hints; closes with `q`, `<Esc>`, `<C-c>`, or by calling `show_list()` again.
   - Can also be explicitly entered/focused with `enter_list()` without toggling it closed first.
   - When focused, supports `<CR>` to jump, `dd` to remove, and `<Tab>` to select/swap mark positions.
@@ -52,6 +53,7 @@ require('miniharp').setup({
     position = 'center', -- 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
     show_hints = true, -- show close hints in the floating list (default: true)
     enter = true, -- enter the floating window when it opens (default: true)
+    auto_hide = false, -- hide while the list covers the editor cursor (default: false)
   },
 })
 ```
@@ -72,6 +74,7 @@ require('miniharp').setup({
       position = 'center', -- `top-left`, `top-right`, `bottom-left`, `bottom-right`.
       show_hints = true,
       enter = true, -- Whether to enter the floating window or not
+      auto_hide = false, -- Hide while the list covers the editor cursor
     },
   },
 }
@@ -122,6 +125,7 @@ All functions are exposed from `require('miniharp')`:
   ---@field position? string           @'center', 'top-left', 'top-right', 'bottom-left', or 'bottom-right' (default: 'center')
   ---@field show_hints? boolean        @Show close hints in the floating list (default: true)
   ---@field enter? boolean             @Enter the floating list window when opening it (default: true)
+  ---@field auto_hide? boolean         @Hide the list while it covers the editor cursor (default: false)
   ```
 
 - `toggle_file()` – Toggle a file mark for the **current** file.

@@ -186,6 +186,7 @@ end
 ---@field position? string  @Floating list position: 'center', 'top-left', 'top-right', 'bottom-left', or 'bottom-right' (default: 'center')
 ---@field show_hints? boolean  @Show close hints in the floating list (default: true)
 ---@field enter? boolean  @Enter the floating list window when opening it (default: true)
+---@field auto_hide? boolean  @Hide the list while it covers the editor cursor (default: false)
 
 ---Setup miniharp.
 ---@param opts? MiniharpOpts
