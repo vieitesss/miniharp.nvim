@@ -8,7 +8,7 @@ release version:
 		echo "Version must look like v0.1.0" >&2
 		exit 1
 	fi
-	branch="$$(git branch --show-current)"
+	branch="$(git branch --show-current)"
 	if [[ "$branch" != "main" ]]; then
 		echo "Release tags must be created from main. Current branch: $branch" >&2
 		exit 1
